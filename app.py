@@ -698,6 +698,73 @@ def test_wikijs_connection():
             'message': f'Unerwarteter Fehler: {str(e)}\nBitte überprüfen Sie die Konsole für weitere Details.'
         }
 
+@app.route('/get_wikijs_directories', methods=['GET'])
+def get_wikijs_directories():
+    """Retrieves a list of all directories from Wiki.js"""
+    if not WIKIJS_URL or not WIKIJS_TOKEN:
+        return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert', 'directories': []}
+
+    try:
+        # GraphQL query to get all pages which will be used to extract unique directories
+        query = """
+        {
+          pages {
+            list {
+              path
+            }
+          }
+        }
+        """
+
+        headers = {
+            'Authorization': f'Bearer {WIKIJS_TOKEN}',
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.post(
+            f'{WIKIJS_URL}/graphql',
+            headers=headers,
+            json={'query': query}
+        )
+
+        response.raise_for_status()
+        data = response.json()
+
+        if 'errors' in data:
+            error_msg = str(data['errors'])
+            return {'success': False, 'message': f'GraphQL Error: {error_msg}', 'directories': []}
+
+        # Extract all paths from the pages
+        pages = data.get('data', {}).get('pages', {}).get('list', [])
+        all_paths = [page['path'] for page in pages if 'path' in page]
+
+        # Extract unique directories from paths
+        directories = set()
+        for path in all_paths:
+            # Split the path and reconstruct directories
+            parts = path.split('/')
+            for i in range(1, len(parts)):
+                directories.add('/'.join(parts[:i]))
+
+        # Convert set to list and sort
+        directory_list = sorted(list(directories))
+
+        # Add root directory if it doesn't exist
+        if '' not in directory_list:
+            directory_list.insert(0, '')
+
+        return {'success': True, 'directories': directory_list}
+
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        return {
+            'success': False,
+            'message': f'Error fetching directories: {str(e)}',
+            'error_details': error_trace,
+            'directories': []
+        }
+
 # Ensure static directory and essential files exist
 def ensure_static_files_exist():
     static_dir = os.path.join(app.root_path, 'static')
