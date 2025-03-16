@@ -345,7 +345,7 @@
                 <div id="defaultFolderSection">
                     <label for="defaultFolder">Standard-Ordner:</label>
                     <div class="input-group wiki-path-selector" style="margin-top: 5px;">
-                        <input type="text" id="defaultFolder" name="default_folder" placeholder="z.B. Dokumentation/Benutzer" style="flex-grow: 1;">
+                        <input type="text" id="defaultFolder" name="default_folder" placeholder="z.B. DocFlow/Benutzer" style="flex-grow: 1;">
                         <button type="button" id="browseFolders" class="small-button">Ordner wählen</button>
                         <div class="info-text" style="width: 100%; margin-top: 5px;">
                             Falls kein Pfad angegeben wird, werden Dateien im Format "[Standard-Ordner]/[Benutzername]/[Datum-Uhrzeit]/[Dateiname]" gespeichert.
@@ -452,7 +452,7 @@
 
                 // Update the placeholder in the default folder input if it exists
                 if (defaultFolder) {
-                    defaultFolder.placeholder = `z.B. Dokumentation/${username || 'Benutzer'}`;
+                    defaultFolder.placeholder = `z.B. DocFlow/${username || 'Benutzer'}`;
                 }
             }
 
