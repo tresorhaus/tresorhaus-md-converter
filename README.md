@@ -1,4 +1,3 @@
-```markdown
 # TresorHaus DocFlow
 
 <p align="center">
