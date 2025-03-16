@@ -23,6 +23,19 @@ warning() {
     echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
 }
 
+# Funktion zum Verwalten der Backups (max 3)
+manage_backups() {
+    local base_dir="/opt/tresorhaus-docflow-backup"
+    local backup_count=$(find /opt -maxdepth 1 -name "tresorhaus-docflow-backup-*" -type d | wc -l)
+
+    # Wenn mehr als 3 Backups vorhanden sind, lösche die ältesten
+    if [ "$backup_count" -gt 3 ]; then
+        log "Es sind mehr als 3 Backups vorhanden. Lösche die ältesten..."
+        find /opt -maxdepth 1 -name "tresorhaus-docflow-backup-*" -type d | sort | head -n -3 | xargs rm -rf
+        log "Alte Backups wurden gelöscht. Nur die 3 neuesten werden behalten."
+    fi
+}
+
 # Prüfen, ob Script als root läuft
 if [ "$EUID" -ne 0 ]; then
     error "Bitte als root ausführen (sudo ./update.sh)"
@@ -48,6 +61,9 @@ log "Erstelle Backup..."
 mkdir -p $BACKUP_DIR
 cp -r $INSTALL_DIR/* $BACKUP_DIR/
 cp $INSTALL_DIR/.env $BACKUP_DIR/ 2>/dev/null || true
+
+# Verwalte Backups (behält nur die neuesten 3)
+manage_backups
 
 # Service stoppen
 log "Stoppe Service..."
