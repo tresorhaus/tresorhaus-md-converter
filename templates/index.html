@@ -168,6 +168,19 @@
             const validPathRegex = /^[a-zA-Z0-9\-_\/]+$/;
             const validTitleRegex = /^[a-zA-Z0-9 \-_]+$/;
 
+            // Funktion zum Sanitieren von Wiki.js Seitentiteln
+            function sanitizeWikiTitle(title) {
+                // Entferne alle unerlaubten Zeichen außer Buchstaben, Zahlen, Leerzeichen, Bindestrichen und Unterstrichen
+                return title.replace(/[^a-zA-Z0-9 \-_]/g, '').trim();
+            }
+
+            // Funktion zum Sanitieren von Wiki.js Pfaden
+            function sanitizeWikiPath(path) {
+                // Entferne alle unerlaubten Zeichen außer Buchstaben, Zahlen, Bindestrichen, Unterstrichen und Schrägstrichen
+                // Ersetze Leerzeichen durch Bindestriche
+                return path.replace(/ /g, '-').replace(/[^a-zA-Z0-9\-_\/]/g, '').trim();
+            }
+
             // Function to validate and show warnings for Wiki.js inputs
             function validateWikiInput(input, isPath) {
                 const value = input.value.trim();
@@ -245,7 +258,10 @@
                     for (let i = 0; i < fileInput.files.length; i++) {
                         const file = fileInput.files[i];
                         const fileName = file.name;
+                        // Erhalte den Dateinamen ohne Erweiterung
                         const fileNameWithoutExt = fileName.split('.').slice(0, -1).join('.');
+                        // Sanitiere den Titel automatisch
+                        const sanitizedTitle = sanitizeWikiTitle(fileNameWithoutExt);
 
                         const fileDetail = document.createElement('div');
                         fileDetail.className = 'file-detail';
@@ -256,7 +272,7 @@
                             <div>
                                 <label for="wiki_title_${i}">Wiki.js Seitentitel:</label>
                                 <input type="text" id="wiki_title_${i}" name="wiki_title_${i}"
-                                       value="${fileNameWithoutExt}" placeholder="Titel der Wiki-Seite">
+                                       value="${sanitizedTitle}" placeholder="Titel der Wiki-Seite">
                                 <div class="input-help">Erlaubt: Buchstaben, Zahlen, Leerzeichen, Bindestriche, Unterstriche</div>
                             </div>
                             <div>
@@ -269,6 +285,16 @@
 
                         wikiFileSettings.appendChild(fileDetail);
 
+                        // Zeige an, wenn der Titel sanitiert wurde (falls er sich vom ursprünglichen Dateinamen unterscheidet)
+                        if (sanitizedTitle !== fileNameWithoutExt) {
+                            const titleInput = document.getElementById(`wiki_title_${i}`);
+                            const notificationDiv = document.createElement('div');
+                            notificationDiv.className = 'input-help';
+                            notificationDiv.style.color = '#856404';
+                            notificationDiv.textContent = 'Der Titel wurde automatisch bereinigt, um Wiki.js-Anforderungen zu entsprechen.';
+                            titleInput.insertAdjacentElement('afterend', notificationDiv);
+                        }
+
                         // Add event listeners to the newly created inputs
                         document.getElementById(`wiki_title_${i}`).addEventListener('input', function() {
                             validateWikiInput(this, false);
@@ -276,6 +302,12 @@
 
                         document.getElementById(`wiki_path_${i}`).addEventListener('input', function() {
                             validateWikiInput(this, true);
+
+                            // Auto-sanitize path on input
+                            const sanitizedValue = sanitizeWikiPath(this.value);
+                            if (sanitizedValue !== this.value) {
+                                this.value = sanitizedValue;
+                            }
                         });
                     }
                 }

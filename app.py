@@ -388,6 +388,16 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
                             custom_path = wiki_paths.get(f"path_{i}", "")
                             custom_title = wiki_titles.get(f"title_{i}", "")
 
+                            # Für Titel: Wenn ein benutzerdefinierter Titel vorhanden ist, verwende diesen,
+                            # ansonsten verwende den bereinigten Dateinamen ohne Erweiterung
+                            if not custom_title or custom_title.strip() == "":
+                                # Extrahiere den Dateinamen ohne Erweiterung
+                                base_title = os.path.splitext(filename)[0]
+                                # Sanitiere den Titel automatisch
+                                sanitized_title = sanitize_wikijs_title(base_title)
+                                custom_title = sanitized_title
+                                log_debug(f"Kein Titel angegeben, verwende automatisch sanitierten Dateinamen: '{sanitized_title}'", "info")
+
                             # Überprüfe, ob der Pfad oder Titel ungültige Zeichen enthält, bevor sie sanitiert werden
                             if custom_path and not sanitize_wikijs_path(custom_path) == custom_path:
                                 log_debug(f"Warnung: Benutzerdefinierter Pfad '{custom_path}' enthält ungültige Zeichen und wird sanitiert.", "warning")
