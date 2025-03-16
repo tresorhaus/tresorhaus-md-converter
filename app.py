@@ -174,6 +174,44 @@ INDEX_TEMPLATE = '''
             font-size: 0.9em;
             border-top: 1px solid #eee;
         }
+        .debug-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .debug-container h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .debug-log {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+        }
+        .debug-log li {
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px dotted #eee;
+        }
+        .debug-toggle {
+            background-color: #f1f1f1;
+            border: none;
+            color: #666;
+            padding: 5px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -229,11 +267,23 @@ INDEX_TEMPLATE = '''
             </div>
         </form>
 
+        <button id="debug-toggle" class="debug-toggle">Debug-Informationen anzeigen</button>
+        <div id="debug-container" class="debug-container" style="display: none;">
+            <h4>Debug-Log</h4>
+            <ul id="debug-log" class="debug-log"></ul>
+        </div>
+
         <script>
+        // API-Test Funktionalität
         document.getElementById('test-api').addEventListener('click', async () => {
             const resultSpan = document.getElementById('api-test-result');
+            const debugLog = document.getElementById('debug-log');
+
             resultSpan.textContent = 'Teste Verbindung...';
             resultSpan.style.color = 'gray';
+
+            // Log debug info
+            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Starte API-Verbindungstest...</li>`;
 
             try {
                 const response = await fetch('/test_wikijs_connection', {
@@ -243,9 +293,44 @@ INDEX_TEMPLATE = '''
 
                 resultSpan.textContent = data.message;
                 resultSpan.style.color = data.success ? '#4CAF50' : '#f44336';
+
+                // Log response details
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: API-Test Antwort: ${data.success ? 'Erfolg' : 'Fehlgeschlagen'}</li>`;
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Nachricht: ${data.message}</li>`;
             } catch (error) {
                 resultSpan.textContent = 'Fehler beim Testen der Verbindung';
                 resultSpan.style.color = '#f44336';
+
+                // Log error
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Fehler beim API-Test: ${error.message}</li>`;
+            }
+        });
+
+        // Form submission with debug logging
+        document.querySelector('form').addEventListener('submit', function() {
+            const debugLog = document.getElementById('debug-log');
+            const uploadToWiki = document.getElementById('upload_to_wiki').checked;
+
+            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Formular wird abgesendet...</li>`;
+            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Wiki.js Upload aktiviert: ${uploadToWiki ? 'Ja' : 'Nein'}</li>`;
+
+            const files = document.getElementById('files').files;
+            if (files.length > 0) {
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: ${files.length} Datei(en) ausgewählt: ${Array.from(files).map(f => f.name).join(', ')}</li>`;
+            } else {
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Keine Dateien ausgewählt</li>`;
+            }
+        });
+
+        // Toggle debug panel
+        document.getElementById('debug-toggle').addEventListener('click', function() {
+            const debugContainer = document.getElementById('debug-container');
+            if (debugContainer.style.display === 'none') {
+                debugContainer.style.display = 'block';
+                this.textContent = 'Debug-Informationen ausblenden';
+            } else {
+                debugContainer.style.display = 'none';
+                this.textContent = 'Debug-Informationen anzeigen';
             }
         });
         </script>
@@ -393,6 +478,53 @@ RESULT_TEMPLATE = '''
             font-size: 0.9em;
             border-top: 1px solid #eee;
         }
+        .debug-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .debug-container h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .debug-log {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+        }
+        .debug-log li {
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px dotted #eee;
+        }
+        .api-log-entry {
+            color: #0066cc;
+        }
+        .error-log-entry {
+            color: #cc0000;
+        }
+        .success-log-entry {
+            color: #009900;
+        }
+        .debug-toggle {
+            background-color: #f1f1f1;
+            border: none;
+            color: #666;
+            padding: 5px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -433,6 +565,31 @@ RESULT_TEMPLATE = '''
             {% endfor %}
         </ul>
         {% endif %}
+
+        <button id="debug-toggle" class="debug-toggle">Debug-Informationen anzeigen</button>
+        <div id="debug-container" class="debug-container" style="display: none;">
+            <h4>API und Konvertierungs-Log</h4>
+            <ul class="debug-log">
+                <li><strong>Session ID:</strong> {{ session_id }}</li>
+                <li><strong>Upload zu Wiki.js:</strong> {{ 'Aktiviert' if wiki_requested else 'Deaktiviert' }}</li>
+                {% for log in debug_logs %}
+                <li class="{{ log.type }}-log-entry">{{ log.time }}: {{ log.message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <script>
+        document.getElementById('debug-toggle').addEventListener('click', function() {
+            const debugContainer = document.getElementById('debug-container');
+            if (debugContainer.style.display === 'none') {
+                debugContainer.style.display = 'block';
+                this.textContent = 'Debug-Informationen ausblenden';
+            } else {
+                debugContainer.style.display = 'none';
+                this.textContent = 'Debug-Informationen anzeigen';
+            }
+        });
+        </script>
     </div>
 
     <a href="{{ url_for('index') }}" class="btn">Zurück zur Startseite</a>
@@ -462,10 +619,23 @@ def get_input_format(filename):
     ext = filename.rsplit('.', 1)[1].lower()
     return FORMAT_MAPPING.get(ext, 'docx')
 
+# Globale Variable für Debug-Logs
+debug_logs = []
+
+def log_debug(message, log_type='info'):
+    """Fügt eine Debug-Nachricht zum Log hinzu"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    debug_logs.append({
+        'time': timestamp,
+        'message': message,
+        'type': log_type
+    })
+    print(f"[{timestamp}] {log_type.upper()}: {message}")
+
 def upload_to_wikijs(content, title, session_id):
     """Lädt eine Markdown-Datei in Wiki.js hoch"""
     if not WIKIJS_URL or not WIKIJS_TOKEN:
-        print("Wiki.js URL oder Token nicht konfiguriert")
+        log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
         return False, None
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -475,6 +645,9 @@ def upload_to_wikijs(content, title, session_id):
     title_without_extension = title
     if title.lower().endswith('.md'):
         title_without_extension = title[:-3]
+
+    log_debug(f"Starte Upload zu Wiki.js: {title_without_extension}", "api")
+    log_debug(f"Ziel-Pfad: {path}", "api")
 
     headers = {
         'Authorization': f'Bearer {WIKIJS_TOKEN}',
@@ -508,9 +681,7 @@ def upload_to_wikijs(content, title, session_id):
     }
 
     try:
-        print(f"Sende Wiki.js Request an: {WIKIJS_URL}/graphql")
-        print(f"Headers: {headers}")
-        print(f"Variablen: {variables}")
+        log_debug(f"Sende Wiki.js Request an: {WIKIJS_URL}/graphql", "api")
 
         # POST mit json payload für die Mutation
         response = requests.post(
@@ -522,13 +693,14 @@ def upload_to_wikijs(content, title, session_id):
             }
         )
 
-        print(f"Status Code: {response.status_code}")
+        log_debug(f"Status Code: {response.status_code}", "api")
 
         response.raise_for_status()
         data = response.json()
 
         if 'errors' in data:
-            print(f"GraphQL Fehler: {data['errors']}")
+            error_msg = str(data['errors'])
+            log_debug(f"GraphQL Fehler: {error_msg}", "error")
             return False, None
 
         # Vereinfachter Zugriff auf das Ergebnis entsprechend der curl-Beispielstruktur
@@ -536,15 +708,15 @@ def upload_to_wikijs(content, title, session_id):
         if result.get('succeeded'):
             # Konstruiere die vollständige Wiki.js URL zur Seite
             wiki_url = f"{WIKIJS_URL}/{path}"
-            print(f"Wiki.js Seite erfolgreich erstellt: {wiki_url}")
+            log_debug(f"Wiki.js Seite erfolgreich erstellt: {wiki_url}", "success")
             return True, wiki_url
         else:
             error_message = result.get('message', 'Unbekannter Fehler')
-            print(f"Wiki.js Fehler: {error_message}")
+            log_debug(f"Wiki.js Fehler: {error_message}", "error")
             return False, None
 
     except Exception as e:
-        print(f"Fehler beim Upload zu Wiki.js: {str(e)}")
+        log_debug(f"Fehler beim Upload zu Wiki.js: {str(e)}", "error")
         return False, None
 
 def convert_to_markdown(input_path, output_path):
@@ -571,47 +743,70 @@ def convert_to_markdown(input_path, output_path):
 
 def process_uploads(files, session_id, upload_to_wiki=False):
     """Verarbeitet hochgeladene Dateien und konvertiert sie zu Markdown"""
+    global debug_logs
+    debug_logs = []  # Zurücksetzen der Debug-Logs für jede neue Sitzung
+
     upload_dir = os.path.join(UPLOAD_FOLDER, session_id)
     result_dir = os.path.join(RESULT_FOLDER, session_id)
+
+    log_debug(f"Neue Upload-Verarbeitung gestartet. Session ID: {session_id}")
+    log_debug(f"Wiki.js-Upload aktiviert: {'Ja' if upload_to_wiki else 'Nein'}")
 
     # Create directories if they don't exist
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
+        log_debug(f"Upload-Verzeichnis erstellt: {upload_dir}")
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
+        log_debug(f"Ergebnis-Verzeichnis erstellt: {result_dir}")
 
     converted_files = []
     failed_files = []
     wiki_urls = {}
 
+    log_debug(f"{len(files)} Datei(en) für die Verarbeitung empfangen")
+
     for file in files:
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
+            log_debug(f"Verarbeite Datei: {filename}")
+
             file_path = os.path.join(upload_dir, filename)
             file.save(file_path)
+            log_debug(f"Datei gespeichert unter: {file_path}")
 
             output_filename = os.path.splitext(filename)[0] + '.md'
             output_path = os.path.join(result_dir, output_filename)
 
+            log_debug(f"Starte Konvertierung zu: {output_filename}")
             if convert_to_markdown(file_path, output_path):
+                log_debug(f"Konvertierung erfolgreich: {output_filename}", "success")
                 converted_files.append(output_filename)
 
                 if upload_to_wiki:
-                    print(f"Lade {output_filename} in Wiki.js hoch...")
+                    log_debug(f"Beginne Upload zu Wiki.js: {output_filename}", "api")
                     try:
                         with open(output_path, 'r', encoding='utf-8') as md_file:
                             content = md_file.read()
+                            log_debug(f"Markdown-Datei gelesen: {len(content)} Zeichen", "api")
                             success, wiki_url = upload_to_wikijs(content, output_filename, session_id)
                             if success:
                                 wiki_urls[output_filename] = wiki_url
-                                print(f"Upload erfolgreich. Wiki URL: {wiki_url}")
+                                log_debug(f"Wiki.js Upload erfolgreich: {wiki_url}", "success")
                             else:
-                                print(f"Upload fehlgeschlagen für {output_filename}")
+                                log_debug(f"Wiki.js Upload fehlgeschlagen für {output_filename}", "error")
                     except Exception as e:
-                        print(f"Fehler beim Lesen oder Hochladen von {output_filename}: {str(e)}")
+                        log_debug(f"Fehler beim Lesen/Hochladen von {output_filename}: {str(e)}", "error")
             else:
+                log_debug(f"Konvertierung fehlgeschlagen: {filename}", "error")
                 failed_files.append(filename)
+        else:
+            if not file:
+                log_debug("Leerer Datei-Eintrag übersprungen", "error")
+            else:
+                log_debug(f"Ungültiges Dateiformat: {file.filename}", "error")
 
+    log_debug(f"Verarbeitung abgeschlossen: {len(converted_files)} konvertiert, {len(failed_files)} fehlgeschlagen")
     return converted_files, failed_files, wiki_urls
 
 def create_zip_file(session_id):
@@ -665,7 +860,9 @@ def index():
             converted_files=converted_files,
             failed_files=failed_files,
             wiki_urls=wiki_urls,
-            session_id=session_id
+            session_id=session_id,
+            debug_logs=debug_logs,
+            wiki_requested=upload_to_wiki
         )
 
     return render_template_string(INDEX_TEMPLATE)
@@ -699,13 +896,18 @@ def download_single_file(session_id, filename):
 
 @app.route('/test_wikijs_connection', methods=['POST'])
 def test_wikijs_connection():
+    global debug_logs
+    debug_logs = []  # Zurücksetzen der Debug-Logs
+
     if not WIKIJS_URL or not WIKIJS_TOKEN:
+        log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
         return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert'}
 
     # Test connection using pages list query
     try:
         # Use a simple query to list pages
         test_query = "{pages{list{id,title,path,contentType}}}"
+        log_debug(f"Teste Wiki.js Verbindung zu: {WIKIJS_URL}", "api")
 
         # URL encode the query parameter
         import urllib.parse
@@ -714,6 +916,7 @@ def test_wikijs_connection():
         headers = {
             'Authorization': f'Bearer {WIKIJS_TOKEN}'
         }
+        log_debug(f"Sende GET-Anfrage an: {WIKIJS_URL}/graphql/pages/list", "api")
 
         # Use GET request to the pages list endpoint with query as URL parameter
         response = requests.get(
@@ -721,16 +924,15 @@ def test_wikijs_connection():
             headers=headers
         )
 
-        # Print detailed debug info
-        print(f"Status Code: {response.status_code}")
-        print(f"Response Headers: {response.headers}")
-        print(f"Response Content: {response.text}")
+        # Log detailed debug info
+        log_debug(f"Status Code: {response.status_code}", "api")
 
         response.raise_for_status()
         data = response.json()
 
         if 'errors' in data:
             error_msg = data['errors'][0].get('message', 'Unbekannter GraphQL-Fehler')
+            log_debug(f"API-Fehler: {error_msg}", "error")
             return {
                 'success': False,
                 'message': f"API-Fehler: {error_msg}\nBitte überprüfen Sie den API-Token."
@@ -738,19 +940,24 @@ def test_wikijs_connection():
 
         # Check if we got a valid response with pages data
         if 'data' in data and 'pages' in data['data'] and 'list' in data['data']['pages']:
-            return {'success': True, 'message': 'Verbindung zu Wiki.js erfolgreich hergestellt!'}
+            page_count = len(data['data']['pages']['list'])
+            log_debug(f"Verbindung erfolgreich! {page_count} Seiten gefunden.", "success")
+            return {'success': True, 'message': f'Verbindung zu Wiki.js erfolgreich hergestellt! {page_count} Seiten gefunden.'}
         else:
+            log_debug("Unerwartetes Antwortformat von Wiki.js", "error")
             return {
                 'success': False,
                 'message': 'Unerwartetes Antwortformat von Wiki.js. Bitte überprüfen Sie die API-Konfiguration.'
             }
 
     except requests.exceptions.ConnectionError:
+        log_debug(f"Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}", "error")
         return {
             'success': False,
             'message': f'Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}'
         }
     except requests.exceptions.HTTPError as e:
+        log_debug(f"HTTP-Fehler {e.response.status_code}: {e.response.text}", "error")
         if e.response.status_code == 401:
             return {
                 'success': False,
@@ -766,6 +973,7 @@ def test_wikijs_connection():
             'message': f'HTTP-Fehler {e.response.status_code}: {e.response.text}'
         }
     except Exception as e:
+        log_debug(f"Unerwarteter Fehler: {str(e)}", "error")
         return {
             'success': False,
             'message': f'Unerwarteter Fehler: {str(e)}\nBitte überprüfen Sie die Konsole für weitere Details.'
