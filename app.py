@@ -3,7 +3,7 @@ TresorHaus DocFlow
 Ein Dokumentenkonverter für verschiedene Dateiformate zu Markdown mit Wiki.js Integration
 
 Author: Joachim Mild
-Created: 2024
+Created: 2025
 Company: TresorHaus GmbH
 """
 
@@ -69,7 +69,7 @@ INDEX_TEMPLATE = '''
 <html>
 <head>
     <title>TresorHaus DocFlow - Dokumentenkonverter</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
         body {
             font-family: Arial, sans-serif;
