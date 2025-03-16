@@ -395,7 +395,7 @@
                         <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
                     </div>
                     <div class="info-text" style="width: 100%; margin-top: 5px;">
-                        Falls Sie keinen Pfad angeben, werden Ihre Dateien automatisch unter '[Wiki-Pfad]/[Ihr Name]/[Datum-Uhrzeit]' gespeichert.
+                        Falls Sie keinen Pfad angeben, werden Ihre Dateien automatisch unter '<span id="default-path-example">DocFlow/Benutzer/YYYY-MM-DD</span>' gespeichert.
                     </div>
 
                     <!-- Directory browser modal -->
@@ -506,6 +506,24 @@
                 if (defaultFolder) {
                     defaultFolder.placeholder = `z.B. DocFlow/${username || 'Benutzer'}`;
                 }
+
+                // Update the example default path display with actual user values
+                function updateDefaultPathExample() {
+                    const currentDate = new Date();
+                    const datePart = currentDate.toISOString().split('T')[0];
+                    const timePart = `${currentDate.getHours()}${currentDate.getMinutes()}`;
+                    const username = usernameHidden.value || 'Benutzer';
+                    const defaultPathExample = document.getElementById('default-path-example');
+
+                    if (defaultPathExample) {
+                        defaultPathExample.textContent = `DocFlow/${username}/${datePart}-${timePart}`;
+                    }
+                }
+
+                // Call the function initially and when username changes
+                updateDefaultPathExample();
+                usernameInput.addEventListener('input', updateDefaultPathExample);
+                saveUserSettings.addEventListener('click', updateDefaultPathExample);
             }
 
             // Settings toggle
