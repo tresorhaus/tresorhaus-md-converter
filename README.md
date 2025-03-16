@@ -160,4 +160,3 @@ Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe die [LICENSE](LICENSE
 <p align="center">
   Entwickelt mit ❤️ von Joachim Mild für TresorHaus
 </p>
-```
