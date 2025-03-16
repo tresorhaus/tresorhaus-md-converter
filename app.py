@@ -184,7 +184,7 @@ INDEX_TEMPLATE = '''
         </form>
     </div>
     <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee;">
-        Entwickelt von Joachim Mild für TresorHaus GmbH © 2024
+        Entwickelt von Joachim Mild für TresorHaus GmbH © 2025
     </div>
 </body>
 </html>
@@ -315,7 +315,7 @@ RESULT_TEMPLATE = '''
 
     <a href="{{ url_for('index') }}" class="btn">Zurück zur Startseite</a>
     <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee;">
-        Entwickelt von Joachim Mild für TresorHaus GmbH © 2024
+        Entwickelt von Joachim Mild für TresorHaus GmbH © 2025
     </div>
 </body>
 </html>
