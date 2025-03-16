@@ -421,6 +421,7 @@ def get_input_format(filename):
 def upload_to_wikijs(content, title, session_id):
     """Lädt eine Markdown-Datei in Wiki.js hoch"""
     if not WIKIJS_URL or not WIKIJS_TOKEN:
+        print("Wiki.js URL oder Token nicht konfiguriert")
         return False, None
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -431,24 +432,79 @@ def upload_to_wikijs(content, title, session_id):
         'Content-Type': 'application/json'
     }
 
-    data = {
-        'path': path,
+    # GraphQL mutation für das Erstellen einer neuen Seite
+    mutation = """
+    mutation CreatePage(
+        $content: String!
+        $description: String
+        $editor: String!
+        $isPrivate: Boolean!
+        $isPublished: Boolean!
+        $locale: String!
+        $path: String!
+        $tags: [String]!
+        $title: String!
+    ) {
+        pages {
+            create(
+                content: $content
+                description: $description
+                editor: $editor
+                isPrivate: $isPrivate
+                isPublished: $isPublished
+                locale: $locale
+                path: $path
+                tags: $tags
+                title: $title
+            ) {
+                responseResult {
+                    succeeded
+                    errorCode
+                    slug
+                    message
+                }
+            }
+        }
+    }
+    """
+
+    variables = {
         'content': content,
-        'title': title,
+        'description': f'Automatisch erstellt durch TresorHaus DocFlow am {timestamp}',
+        'editor': 'markdown',
         'isPrivate': False,
-        'isPublished': True
+        'isPublished': True,
+        'locale': 'de',
+        'path': path,
+        'tags': ['DocFlow', 'Automatisch'],
+        'title': title
     }
 
     try:
         response = requests.post(
-            f'{WIKIJS_URL}/api/v1/pages',
+            f'{WIKIJS_URL}/graphql',
             headers=headers,
-            json=data
+            json={
+                'query': mutation,
+                'variables': variables
+            }
         )
         response.raise_for_status()
-        return True, f"{WIKIJS_URL}/{path}"
+        data = response.json()
+
+        if 'errors' in data:
+            print(f"GraphQL Fehler: {data['errors']}")
+            return False, None
+
+        result = data.get('data', {}).get('pages', {}).get('create', {}).get('responseResult', {})
+        if result.get('succeeded'):
+            return True, f"{WIKIJS_URL}/{path}"
+        else:
+            print(f"Wiki.js Fehler: {result.get('message')}")
+            return False, None
+
     except Exception as e:
-        print(f"Fehler beim Upload zu Wiki.js: {e}")
+        print(f"Fehler beim Upload zu Wiki.js: {str(e)}")
         return False, None
 
 def convert_to_markdown(input_path, output_path):
