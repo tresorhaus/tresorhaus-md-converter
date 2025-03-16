@@ -35,10 +35,18 @@ VENV_DIR="$INSTALL_DIR/venv"
 SERVICE_NAME="tresorhaus-docflow"
 BACKUP_DIR="/opt/tresorhaus-docflow-backup-$(date +%Y%m%d_%H%M%S)"
 
+# Wiki.js Konfiguration aktualisieren?
+read -p "Wiki.js Konfiguration aktualisieren? (j/n): " UPDATE_WIKIJS
+if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
+    read -p "Neue Wiki.js URL eingeben (leer lassen für keine Änderung): " NEW_WIKIJS_URL
+    read -p "Neuen Wiki.js API Token eingeben (leer lassen für keine Änderung): " NEW_WIKIJS_TOKEN
+fi
+
 # Backup erstellen
 log "Erstelle Backup..."
 mkdir -p $BACKUP_DIR
 cp -r $INSTALL_DIR/* $BACKUP_DIR/
+cp $INSTALL_DIR/.env $BACKUP_DIR/ 2>/dev/null || true
 
 # Service stoppen
 log "Stoppe Service..."
@@ -49,6 +57,27 @@ log "Aktualisiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
 cp -r static/* $INSTALL_DIR/static/
 
+# Aktualisiere Wiki.js Konfiguration wenn gewünscht
+if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
+    if [ -f "$INSTALL_DIR/.env" ]; then
+        source "$INSTALL_DIR/.env"
+    fi
+
+    if [ ! -z "$NEW_WIKIJS_URL" ]; then
+        WIKIJS_URL=$NEW_WIKIJS_URL
+    fi
+    if [ ! -z "$NEW_WIKIJS_TOKEN" ]; then
+        WIKIJS_TOKEN=$NEW_WIKIJS_TOKEN
+    fi
+
+    log "Aktualisiere Wiki.js Konfiguration..."
+    cat > $INSTALL_DIR/.env << EOF
+WIKIJS_URL=$WIKIJS_URL
+WIKIJS_TOKEN=$WIKIJS_TOKEN
+EOF
+    chmod 600 $INSTALL_DIR/.env
+fi
+
 # Aktualisiere Python-Pakete
 log "Aktualisiere Python-Pakete..."
 $VENV_DIR/bin/pip install --upgrade pip
@@ -58,6 +87,7 @@ $VENV_DIR/bin/pip install -r requirements.txt --upgrade
 log "Aktualisiere Berechtigungen..."
 chown -R docflow:docflow $INSTALL_DIR
 chmod -R 755 $INSTALL_DIR
+chmod 600 $INSTALL_DIR/.env
 
 # Service neustarten
 log "Starte Service neu..."
@@ -74,6 +104,7 @@ else
     error "Service konnte nicht gestartet werden!"
     error "Stelle Backup wieder her..."
     cp -r $BACKUP_DIR/* $INSTALL_DIR/
+    cp $BACKUP_DIR/.env $INSTALL_DIR/ 2>/dev/null || true
     systemctl start $SERVICE_NAME
     error "Bitte überprüfen Sie: 'systemctl status $SERVICE_NAME'"
 fi

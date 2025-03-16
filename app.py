@@ -1,13 +1,28 @@
+"""
+TresorHaus DocFlow
+Ein Dokumentenkonverter für verschiedene Dateiformate zu Markdown mit Wiki.js Integration
+
+Author: Joachim Mild
+Created: 2024
+Company: TresorHaus GmbH
+"""
+
 import os
 import tempfile
 import subprocess
 import uuid
 import shutil
 from pathlib import Path
-from flask import Flask, request, render_template_string, send_file, redirect, url_for, flash
+from flask import Flask, request, render_template_string, send_file, redirect, url_for, flash, send_from_directory
 from werkzeug.utils import secure_filename
 import zipfile
 import io
+import requests
+from datetime import datetime
+from dotenv import load_dotenv
+
+# Lade Umgebungsvariablen
+load_dotenv()
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.urandom(24)
@@ -20,6 +35,10 @@ ALLOWED_EXTENSIONS = {
     'ppt', 'pptx', 'odp',
     'rst', 'textile', 'wiki', 'dbk', 'xml', 'adoc', 'asciidoc', 'org'
 }
+
+# Wiki.js Konfiguration
+WIKIJS_URL = os.getenv('WIKIJS_URL')
+WIKIJS_TOKEN = os.getenv('WIKIJS_TOKEN')
 
 # Format-Mapping für Pandoc
 FORMAT_MAPPING = {
@@ -50,6 +69,7 @@ INDEX_TEMPLATE = '''
 <html>
 <head>
     <title>TresorHaus DocFlow - Dokumentenkonverter</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -138,11 +158,31 @@ INDEX_TEMPLATE = '''
             width: 100%;
             margin-top: 5px;
         }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .author-info {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='tresorhaus-logo.png') }}" alt="TresorHaus Logo" class="logo">
+    </div>
+
     <div class="app-title">TresorHaus DocFlow</div>
-    <div class="app-subtitle">Markdownkonverter</div>
+    <div class="app-subtitle">Dokumentenkonverter</div>
 
     <div class="container">
         <div class="format-info">
@@ -178,23 +218,28 @@ INDEX_TEMPLATE = '''
                 <label for="files">Wähle Dateien zum Konvertieren aus:</label>
                 <input type="file" name="files" id="files" multiple>
             </div>
+            <div class="checkbox-container">
+                <input type="checkbox" name="upload_to_wiki" id="upload_to_wiki" value="1">
+                <label for="upload_to_wiki">In Wiki.js hochladen</label>
+            </div>
             <div class="form-group">
                 <button type="submit" class="btn">Konvertieren</button>
             </div>
         </form>
     </div>
-    <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee;">
-        Entwickelt von Joachim Mild für TresorHaus GmbH © 2025
+
+    <div class="author-info">
+        Entwickelt von Joachim Mild für TresorHaus GmbH © 2024
     </div>
 </body>
 </html>
 '''
-
 RESULT_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
 <head>
     <title>TresorHaus DocFlow - Konvertierungsergebnisse</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -271,10 +316,19 @@ RESULT_TEMPLATE = '''
             border: 1px solid #C4A962;
             border-radius: 4px;
             transition: all 0.3s ease;
+            margin-left: 10px;
         }
         .file-link:hover {
             background-color: #C4A962;
             color: white;
+        }
+        .wiki-link {
+            background-color: #4CAF50;
+            color: white !important;
+            border-color: #4CAF50;
+        }
+        .wiki-link:hover {
+            background-color: #45a049;
         }
         .error-list {
             color: #d9534f;
@@ -283,9 +337,25 @@ RESULT_TEMPLATE = '''
             color: #333;
             margin-bottom: 20px;
         }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .author-info {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='tresorhaus-logo.png') }}" alt="TresorHaus Logo" class="logo">
+    </div>
+
     <div class="app-title">TresorHaus DocFlow</div>
     <div class="app-subtitle">Konvertierungsergebnisse</div>
 
@@ -295,8 +365,16 @@ RESULT_TEMPLATE = '''
         <ul class="file-list">
             {% for file in converted_files %}
             <li>
-                {{ file }}
-                <a href="{{ url_for('download_single_file', session_id=session_id, filename=file) }}" class="file-link">Herunterladen</a>
+                <span>{{ file }}</span>
+                <div class="action-buttons">
+                    <a href="{{ url_for('download_single_file', session_id=session_id, filename=file) }}"
+                       class="file-link">Herunterladen</a>
+                    {% if file in wiki_urls %}
+                    <a href="{{ wiki_urls[file] }}"
+                       class="file-link wiki-link"
+                       target="_blank">In Wiki.js ansehen</a>
+                    {% endif %}
+                </div>
             </li>
             {% endfor %}
         </ul>
@@ -314,16 +392,22 @@ RESULT_TEMPLATE = '''
     </div>
 
     <a href="{{ url_for('index') }}" class="btn">Zurück zur Startseite</a>
-    <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee;">
-        Entwickelt von Joachim Mild für TresorHaus GmbH © 2025
+
+    <div class="author-info">
+        Entwickelt von Joachim Mild für TresorHaus GmbH © 2024
     </div>
 </body>
 </html>
 '''
 
-# Stellen Sie sicher, dass die Verzeichnisse existieren
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(RESULT_FOLDER, exist_ok=True)
+# Favicon Route
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.png',
+        mimetype='image/png'
+    )
 
 def allowed_file(filename):
     """Überprüft, ob die Dateiendung erlaubt ist"""
@@ -333,6 +417,39 @@ def get_input_format(filename):
     """Bestimmt das Eingabeformat für Pandoc basierend auf der Dateiendung"""
     ext = filename.rsplit('.', 1)[1].lower()
     return FORMAT_MAPPING.get(ext, 'docx')
+
+def upload_to_wikijs(content, title, session_id):
+    """Lädt eine Markdown-Datei in Wiki.js hoch"""
+    if not WIKIJS_URL or not WIKIJS_TOKEN:
+        return False, None
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = f"DocFlow/{session_id}_{timestamp}/{title}"
+
+    headers = {
+        'Authorization': f'Bearer {WIKIJS_TOKEN}',
+        'Content-Type': 'application/json'
+    }
+
+    data = {
+        'path': path,
+        'content': content,
+        'title': title,
+        'isPrivate': False,
+        'isPublished': True
+    }
+
+    try:
+        response = requests.post(
+            f'{WIKIJS_URL}/api/v1/pages',
+            headers=headers,
+            json=data
+        )
+        response.raise_for_status()
+        return True, f"{WIKIJS_URL}/{path}"
+    except Exception as e:
+        print(f"Fehler beim Upload zu Wiki.js: {e}")
+        return False, None
 
 def convert_to_markdown(input_path, output_path):
     """Konvertiert eine Datei in Markdown mithilfe von pandoc"""
@@ -352,7 +469,7 @@ def convert_to_markdown(input_path, output_path):
         print(f"Fehler bei der Konvertierung von {input_path}: {e}")
         return False
 
-def process_uploads(files, session_id):
+def process_uploads(files, session_id, upload_to_wiki=False):
     """Verarbeitet hochgeladene Dateien und konvertiert sie zu Markdown"""
     upload_dir = os.path.join(UPLOAD_FOLDER, session_id)
     result_dir = os.path.join(RESULT_FOLDER, session_id)
@@ -362,6 +479,7 @@ def process_uploads(files, session_id):
 
     converted_files = []
     failed_files = []
+    wiki_urls = {}
 
     for file in files:
         if file and allowed_file(file.filename):
@@ -374,10 +492,17 @@ def process_uploads(files, session_id):
 
             if convert_to_markdown(file_path, output_path):
                 converted_files.append(output_filename)
+
+                if upload_to_wiki:
+                    with open(output_path, 'r', encoding='utf-8') as md_file:
+                        content = md_file.read()
+                        success, wiki_url = upload_to_wikijs(content, output_filename, session_id)
+                        if success:
+                            wiki_urls[output_filename] = wiki_url
             else:
                 failed_files.append(filename)
 
-    return converted_files, failed_files
+    return converted_files, failed_files, wiki_urls
 
 def create_zip_file(session_id):
     """Erstellt eine ZIP-Datei mit allen konvertierten Markdown-Dateien"""
@@ -412,22 +537,26 @@ def index():
             return redirect(request.url)
 
         files = request.files.getlist('files')
+        upload_to_wiki = 'upload_to_wiki' in request.form
 
         if not files or files[0].filename == '':
             flash('Keine Dateien ausgewählt')
             return redirect(request.url)
 
         session_id = str(uuid.uuid4())
-        converted_files, failed_files = process_uploads(files, session_id)
+        converted_files, failed_files, wiki_urls = process_uploads(files, session_id, upload_to_wiki)
 
         if not converted_files and not failed_files:
             flash('Keine gültigen Dateien zum Konvertieren gefunden')
             return redirect(request.url)
 
-        return render_template_string(RESULT_TEMPLATE,
-                               converted_files=converted_files,
-                               failed_files=failed_files,
-                               session_id=session_id)
+        return render_template_string(
+            RESULT_TEMPLATE,
+            converted_files=converted_files,
+            failed_files=failed_files,
+            wiki_urls=wiki_urls,
+            session_id=session_id
+        )
 
     return render_template_string(INDEX_TEMPLATE)
 
