@@ -368,15 +368,19 @@
 
             <div id="wikiOptions" class="wiki-options hidden">
                 <h3>Wiki.js Einstellungen</h3>
-                <p>Definieren Sie für jede Datei, wo sie in Wiki.js hochgeladen werden soll. Wenn kein Pfad angegeben wird, wird automatisch ein strukturierter Pfad erstellt.</p>
+                <p>Hier können Sie festlegen, wo Ihre Dateien im Wiki.js gespeichert werden sollen. Jede Datei kann einen eigenen Pfad bekommen oder Sie nutzen die automatische Struktur.</p>
                 <div id="defaultFolderSection">
-                    <label for="defaultFolder">Standard-Ordner:</label>
-                    <div class="input-group wiki-path-selector" style="margin-top: 5px;">
-                        <input type="text" id="defaultFolder" name="default_folder" placeholder="z.B. DocFlow/Benutzer" style="flex-grow: 1;">
-                        <button type="button" id="browseFolders" class="small-button">Ordner wählen</button>
-                        <div class="info-text" style="width: 100%; margin-top: 5px;">
-                            Falls kein Pfad angegeben wird, werden Dateien im Format "[Standard-Ordner]/[Benutzername]/[Datum-Uhrzeit]/[Dateiname]" gespeichert.
+                    <label for="wiki_path_display">Wiki-Pfad: <span class="path-toggle" id="wiki_path_toggle">[Bearbeiten]</span></label>
+                    <div class="path-display" id="wiki_path_display">DocFlow</div>
+                    <div class="path-input-container" id="wiki_path_input_container">
+                        <div class="input-group wiki-path-selector" style="margin-top: 5px;">
+                            <input type="text" id="defaultFolder" name="default_folder" placeholder="z.B. DocFlow/Benutzer" style="flex-grow: 1;">
+                            <button type="button" id="browseFolders" class="small-button">Ordner wählen</button>
                         </div>
+                        <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
+                    </div>
+                    <div class="info-text" style="width: 100%; margin-top: 5px;">
+                        Falls Sie keinen Pfad angeben, werden Ihre Dateien automatisch unter '[Wiki-Pfad]/[Ihr Name]/[Datum-Uhrzeit]' gespeichert.
                     </div>
 
                     <!-- Directory browser modal -->
@@ -748,6 +752,38 @@
             const closeModalBtn = document.querySelector('.close');
             let selectedDirectory = null;
 
+            // Wiki path display and toggle elements
+            const wikiPathToggle = document.getElementById('wiki_path_toggle');
+            const wikiPathDisplay = document.getElementById('wiki_path_display');
+            const wikiPathInputContainer = document.getElementById('wiki_path_input_container');
+
+            // Function to toggle Wiki path input visibility
+            function toggleWikiPathInput() {
+                const isVisible = wikiPathInputContainer.style.display === 'block';
+                wikiPathInputContainer.style.display = isVisible ? 'none' : 'block';
+                wikiPathToggle.textContent = isVisible ? '[Bearbeiten]' : '[Schließen]';
+            }
+
+            // Add click event to both toggle and display for Wiki path
+            if (wikiPathToggle) wikiPathToggle.addEventListener('click', toggleWikiPathInput);
+            if (wikiPathDisplay) wikiPathDisplay.addEventListener('click', toggleWikiPathInput);
+
+            // Update Wiki path display when input changes
+            if (defaultFolder) {
+                defaultFolder.addEventListener('input', function() {
+                    // Auto-sanitize path on input
+                    const sanitizedValue = sanitizeWikiPath(this.value);
+                    if (sanitizedValue !== this.value) {
+                        this.value = sanitizedValue;
+                    }
+
+                    // Update the display
+                    if (wikiPathDisplay) {
+                        wikiPathDisplay.textContent = this.value || 'DocFlow';
+                    }
+                });
+            }
+
             // Open directory browser modal
             if (browseFoldersBtn) {
                 browseFoldersBtn.addEventListener('click', function() {
@@ -844,6 +880,10 @@
                 selectDirectoryBtn.addEventListener('click', function() {
                     if (selectedDirectory !== null && defaultFolder) {
                         defaultFolder.value = selectedDirectory;
+                        // Update the Wiki path display
+                        if (wikiPathDisplay) {
+                            wikiPathDisplay.textContent = selectedDirectory || 'DocFlow';
+                        }
                         closeModal();
                     } else {
                         alert('Bitte wählen Sie ein Verzeichnis aus.');
