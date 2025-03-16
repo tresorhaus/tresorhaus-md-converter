@@ -378,6 +378,12 @@
                     this.textContent = 'Wiki.js Verbindung testen';
                 });
             });
+
+            // Add this where you display the titles
+            function updateDisplayTitle(element) {
+                const originalTitle = element.textContent;
+                element.textContent = normalizePath(originalTitle);
+            }
         });
     </script>
 </body>
