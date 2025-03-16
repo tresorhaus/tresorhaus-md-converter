@@ -338,17 +338,7 @@
                         fileDetail.innerHTML = `
                             <h4>Datei: ${fileName}</h4>
                             <div>
-                                <label>Wiki.js Seitentitel:</label>
-                                <div class="readonly-field">
-                                    ${sanitizedTitle}
-                                    <small style="display: block; margin-top: 4px; color: #666;">
-                                        Dieser Titel wird an Wiki.js gesendet
-                                    </small>
-                                </div>
                                 <input type="hidden" id="wiki_title_hidden_${i}" name="wiki_title_${i}" value="${sanitizedTitle}">
-                                <div class="info-text">
-                                    Der Titel wurde automatisch optimiert für Wiki.js
-                                </div>
                             </div>
                             <div>
                                 <label for="wiki_path_${i}">Wiki.js Pfad:</label>
