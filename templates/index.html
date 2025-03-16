@@ -322,6 +322,21 @@
         .path-input-container {
             display: none;
         }
+        /* Blue toggle button style */
+        .blue-toggle-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 10px;
+            transition: background-color 0.3s;
+        }
+        .blue-toggle-btn:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -401,7 +416,7 @@
                 <!-- Collapsible files section -->
                 <div class="files-section-header" id="filesToggleHeader" style="margin-top: 20px; cursor: pointer;">
                     <h3 style="display: inline-block; margin-right: 10px;">Dokument Ablage anpassen</h3>
-                    <span class="path-toggle" id="filesToggle">[Ausklappen]</span>
+                    <button class="blue-toggle-btn" id="filesToggle">[Ausklappen]</button>
                 </div>
                 <div id="wikiFileSettings" style="display: none;"></div>
             </div>
@@ -621,7 +636,7 @@
                     const filesToggleHeader = document.getElementById('filesToggleHeader');
 
                     if (filesToggle) {
-                        filesToggle.textContent = `[Ausklappen (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})]`;
+                        filesToggle.textContent = `Ausklappen (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})`;
                     }
 
                     // Make the header visible
@@ -791,12 +806,15 @@
                 const isVisible = wikiFileSettings.style.display === 'block';
                 wikiFileSettings.style.display = isVisible ? 'none' : 'block';
                 filesToggle.textContent = isVisible ?
-                    `[Ausklappen${fileInput.files.length ? ` (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})` : ''}]` :
-                    '[Einklappen]';
+                    `Ausklappen${fileInput.files.length ? ` (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})` : ''}` :
+                    'Einklappen';
             }
 
             // Add click event to files toggle
-            if (filesToggleHeader) filesToggleHeader.addEventListener('click', toggleFilesSection);
+            if (filesToggleHeader) filesToggleHeader.addEventListener('click', function(e) {
+                if (e.target === filesToggle) return; // Don't trigger if button is clicked directly
+                toggleFilesSection();
+            });
             if (filesToggle) filesToggle.addEventListener('click', function(e) {
                 e.stopPropagation(); // Prevent double-triggering with the header click
                 toggleFilesSection();
