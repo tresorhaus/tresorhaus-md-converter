@@ -221,6 +221,12 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
     # Für die Verwendung im Pfad: Ersetze Leerzeichen mit Bindestrichen
     title_for_path = title_without_extension.replace(" ", "-")
 
+    # Berechnete Standardpfad mit Username und Datum
+    safe_username = sanitize_wikijs_path(username) if username else "anonymous"
+    base_folder = "DocFlow"  # Standard-Basis-Ordner
+    default_path = f"{base_folder}/{safe_username}/{date_with_time}"
+    sanitized_default_path = sanitize_wikijs_path(default_path)
+
     # Verwende den benutzerdefinierten Pfad, wenn angegeben, sonst den Standard-Pfad, und sanitiere ihn
     if custom_path and custom_path.strip():
         # Entferne führende und folgende Schrägstriche für Konsistenz
@@ -243,11 +249,9 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
             log_debug(f"Verwende Standard-Ordner direkt: {path}", "info")
         else:
             # Erstelle einen Standard-Pfad mit Benutzernamen und Datum+Uhrzeit
-            safe_username = sanitize_wikijs_path(username) if username else "anonymous"
-            base_folder = "DocFlow"  # Fallback, wenn kein Ordner angegeben
-            default_path = f"{base_folder}/{safe_username}/{date_with_time}/{title_for_path}"
-            path = sanitize_wikijs_path(default_path)
-            log_debug(f"Kein spezifischer Pfad angegeben. Verwende Standard-Pfad: {path}", "info")
+            path = f"{sanitized_default_path}/{title_for_path}"
+            log_debug(f"Kein spezifischer Pfad angegeben. Verwende Standard-Pfad: {sanitized_default_path}/{title_for_path}", "info")
+            log_debug(f"Info: Falls Sie keinen Pfad angeben, werden Ihre Dateien unter '{sanitized_default_path}/[Dateiname]' gespeichert.", "info")
 
     # Endgültige Prüfung und Sanitierung des Pfades
     path = sanitize_wikijs_path(path)
