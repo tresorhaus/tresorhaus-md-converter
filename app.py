@@ -171,7 +171,8 @@ def clean_markdown_content(content):
     """
     Bereinigt Markdown von typischen Konvertierungsartefakten.
     Entfernt:
-    - '> ' am Beginn von Zeilen (Zitate, die keine sein sollten)
+    - '>' am Beginn von Zeilen (Zitate, die keine sein sollten)
+    - '> ' am Beginn von Zeilen
     - "**\" Sonderzeichen
     - "Seite X von X" Marker
     - Andere häufige Artefakte
@@ -179,8 +180,8 @@ def clean_markdown_content(content):
     # Entferne "Seite X von X" Marker mit unterschiedlichen Formatierungen
     content = re.sub(r'([Ss]eite\s+\d+\s+von\s+\d+)', '', content)
 
-    # Entferne "> " am Beginn von Zeilen, wenn es kein beabsichtigtes Zitat ist
-    content = re.sub(r'^>\s+(?![\w>])', '', content, flags=re.MULTILINE)
+    # Entferne ">" und "> " am Beginn von Zeilen
+    content = re.sub(r'^>\s*', '', content, flags=re.MULTILINE)
 
     # Entferne "**\" Artefakte
     content = re.sub(r'\*\*\\', '', content)
