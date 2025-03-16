@@ -783,9 +783,18 @@ def ensure_static_files_exist():
         print(f"Static directory created: {static_dir}")
 
     # Check if logo exists, if not create a placeholder
-    logo_path = os.path.join(static_dir, 'logo-tesorhaus.svg')
+    logo_path = os.path.join(static_dir, 'logo-tresorhaus.svg')
     if not os.path.exists(logo_path):
-        print(f"Warning: Logo file not found at {logo_path}. Please add a logo file.")
+        try:
+            # Create a simple placeholder SVG logo
+            with open(logo_path, 'w') as f:
+                f.write('''<svg width="180" height="60" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="180" height="60" fill="#3498db"/>
+                    <text x="90" y="35" font-family="Arial" font-size="18" text-anchor="middle" fill="white">TresorHaus GmbH</text>
+                </svg>''')
+            print(f"Created placeholder logo at {logo_path}")
+        except Exception as e:
+            print(f"Warning: Could not create logo file at {logo_path}. Error: {str(e)}")
 
     # Check if favicon exists, if not create a placeholder
     favicon_path = os.path.join(static_dir, 'favicon.ico')
