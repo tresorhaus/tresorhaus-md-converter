@@ -123,19 +123,19 @@ def sanitize_wikijs_path(path):
                       ('Ä', 'Ae'), ('Ö', 'Oe'), ('Ü', 'Ue')]:
         path = path.replace(old, new)
 
-    # Leerzeichen durch Bindestriche ersetzen
-    path = path.replace(" ", "-")
-
     # Teilen Sie den Pfad in Segmente auf
     segments = path.split('/')
     sanitized_segments = []
 
     for segment in segments:
         if segment:
+            # Leerzeichen durch Bindestriche ersetzen
+            segment = segment.replace(" ", "-")
+
             # Entferne oder ersetze unerlaubte Zeichen im Segment
             # Erlaubt: Alphanumerische Zeichen, Bindestriche, Unterstriche
             # Entferne unsichere URL-Zeichen wie Satzzeichen, Anführungszeichen usw.
-            sanitized = re.sub(r'[^a-zA-Z0-9-_]', '', segment)
+            sanitized = re.sub(r'[^a-zA-Z0-9\-_]', '', segment)
             if sanitized:  # Nur hinzufügen, wenn nach der Bereinigung noch etwas übrig ist
                 sanitized_segments.append(sanitized)
 
@@ -218,6 +218,9 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
     else:
         title_without_extension = sanitize_wikijs_title(title_without_extension)
 
+    # Für die Verwendung im Pfad: Ersetze Leerzeichen mit Bindestrichen
+    title_for_path = title_without_extension.replace(" ", "-")
+
     # Verwende den benutzerdefinierten Pfad, wenn angegeben, sonst den Standard-Pfad, und sanitiere ihn
     if custom_path and custom_path.strip():
         # Entferne führende und folgende Schrägstriche für Konsistenz
@@ -228,23 +231,26 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
 
         # Wenn ein benutzerdefinierter Pfad angegeben ist, verwende diesen direkt
         # Füge nur den Titel hinzu, wenn er nicht bereits Teil des Pfades ist
-        if not path.endswith(f"/{title_without_extension}") and not path.endswith(title_without_extension):
-            path = f"{path}/{title_without_extension}"
+        if not path.endswith(f"/{title_for_path}") and not path.endswith(title_for_path):
+            path = f"{path}/{title_for_path}"
             log_debug(f"Vollständiger Pfad mit Titel: {path}", "info")
     else:
         # Wenn kein benutzerdefinierter Pfad angegeben ist...
         if default_folder and default_folder.strip():
             # Wenn ein Standard-Ordner ausgewählt wurde, verwende diesen direkt ohne Username/Datum
             base_folder = sanitize_wikijs_path(default_folder.strip())
-            path = f"{base_folder}/{title_without_extension}"
+            path = f"{base_folder}/{title_for_path}"
             log_debug(f"Verwende Standard-Ordner direkt: {path}", "info")
         else:
             # Erstelle einen Standard-Pfad mit Benutzernamen und Datum+Uhrzeit
             safe_username = sanitize_wikijs_path(username) if username else "anonymous"
             base_folder = "DocFlow"  # Fallback, wenn kein Ordner angegeben
-            default_path = f"{base_folder}/{safe_username}/{date_with_time}/{title_without_extension}"
+            default_path = f"{base_folder}/{safe_username}/{date_with_time}/{title_for_path}"
             path = sanitize_wikijs_path(default_path)
             log_debug(f"Kein spezifischer Pfad angegeben. Verwende Standard-Pfad: {path}", "info")
+
+    # Endgültige Prüfung und Sanitierung des Pfades
+    path = sanitize_wikijs_path(path)
 
     # Bereinige den Markdown-Inhalt von typischen Konvertierungsartefakten
     cleaned_content = clean_markdown_content(content)
