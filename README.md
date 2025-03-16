@@ -130,5 +130,5 @@ Projektlink: [https://github.com/tresorhaus/tresorhaus-docflow](https://github.c
 ---
 
 <p align="center">
-  Entwickelt mit ❤️ von TresorHaus
+  Entwickelt mit ❤️ von Joachim Mild für das TresorHaus
 </p>
