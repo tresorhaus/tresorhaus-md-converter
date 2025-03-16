@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!--
+    TresorHaus DocFlow
+    Created by: Joachim Mild
+    Copyright (c) 2023 TresorHaus GmbH
+-->
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -139,6 +144,34 @@
             border-radius: 4px;
             font-size: 14px;
         }
+        /* Footer styles */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px 0;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .footer-buttons {
+            margin-top: 10px;
+        }
+
+        .small-button {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+            color: #495057;
+            padding: 5px 10px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .small-button:hover {
+            background-color: #e9ecef;
+        }
     </style>
 </head>
 <body>
@@ -169,10 +202,17 @@
             </div>
 
             <div class="actions">
-                <button type="button" id="testWikiButton">Wiki.js Verbindung testen</button>
                 <button type="submit">Konvertieren</button>
             </div>
         </form>
+
+        <!-- Footer with creator information and API test -->
+        <div class="footer">
+            <div>Entwickelt von Joachim Mild für TresorHaus GmbH</div>
+            <div class="footer-buttons">
+                <button type="button" id="testWikiButton" class="small-button">Wiki.js API testen</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -375,7 +415,7 @@
                 })
                 .finally(() => {
                     this.disabled = false;
-                    this.textContent = 'Wiki.js Verbindung testen';
+                    this.textContent = 'Wiki.js API testen';
                 });
             });
 
