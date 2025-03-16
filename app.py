@@ -225,13 +225,26 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
         path = sanitize_wikijs_path(original_path)
         if original_path != path:
             log_debug(f"Pfad wurde sanitiert: '{original_path}' → '{path}'", "info")
+
+        # Wenn ein benutzerdefinierter Pfad angegeben ist, verwende diesen direkt
+        # Füge nur den Titel hinzu, wenn er nicht bereits Teil des Pfades ist
+        if not path.endswith(f"/{title_without_extension}") and not path.endswith(title_without_extension):
+            path = f"{path}/{title_without_extension}"
+            log_debug(f"Vollständiger Pfad mit Titel: {path}", "info")
     else:
-        # Erstelle einen Standard-Pfad mit Benutzernamen und Datum+Uhrzeit
-        safe_username = sanitize_wikijs_path(username) if username else "anonymous"
-        base_folder = sanitize_wikijs_path(default_folder) if default_folder else "DocFlow"
-        default_path = f"{base_folder}/{safe_username}/{date_with_time}/{title_without_extension}"
-        path = sanitize_wikijs_path(default_path)
-        log_debug(f"Kein Pfad angegeben. Verwende Standard-Pfad: {path}", "info")
+        # Wenn kein benutzerdefinierter Pfad angegeben ist...
+        if default_folder and default_folder.strip():
+            # Wenn ein Standard-Ordner ausgewählt wurde, verwende diesen direkt ohne Username/Datum
+            base_folder = sanitize_wikijs_path(default_folder.strip())
+            path = f"{base_folder}/{title_without_extension}"
+            log_debug(f"Verwende Standard-Ordner direkt: {path}", "info")
+        else:
+            # Erstelle einen Standard-Pfad mit Benutzernamen und Datum+Uhrzeit
+            safe_username = sanitize_wikijs_path(username) if username else "anonymous"
+            base_folder = "DocFlow"  # Fallback, wenn kein Ordner angegeben
+            default_path = f"{base_folder}/{safe_username}/{date_with_time}/{title_without_extension}"
+            path = sanitize_wikijs_path(default_path)
+            log_debug(f"Kein spezifischer Pfad angegeben. Verwende Standard-Pfad: {path}", "info")
 
     # Bereinige den Markdown-Inhalt von typischen Konvertierungsartefakten
     cleaned_content = clean_markdown_content(content)
