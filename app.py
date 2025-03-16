@@ -471,44 +471,28 @@ def upload_to_wikijs(content, title, session_id):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = f"DocFlow/{session_id}_{timestamp}/{title}"
 
+    # Entferne .md Erweiterung aus dem Titel wenn vorhanden
+    title_without_extension = title
+    if title.lower().endswith('.md'):
+        title_without_extension = title[:-3]
+
     headers = {
         'Authorization': f'Bearer {WIKIJS_TOKEN}',
         'Content-Type': 'application/json'
     }
 
-    # GraphQL mutation für das Erstellen einer neuen Seite
+    # Vereinfachte GraphQL mutation für das Erstellen einer neuen Seite
+    # Basierend auf dem bereitgestellten curl-Beispiel
     mutation = """
-    mutation CreatePage(
-        $content: String!
-        $description: String
-        $editor: String!
-        $isPrivate: Boolean!
-        $isPublished: Boolean!
-        $locale: String!
-        $path: String!
-        $tags: [String]!
-        $title: String!
-    ) {
-        pages {
-            create(
-                content: $content
-                description: $description
-                editor: $editor
-                isPrivate: $isPrivate
-                isPublished: $isPublished
-                locale: $locale
-                path: $path
-                tags: $tags
-                title: $title
-            ) {
-                responseResult {
-                    succeeded
-                    errorCode
-                    slug
-                    message
-                }
-            }
+    mutation ($content: String!, $description: String!, $editor: String!, $isPublished: Boolean!, $locale: String!, $path: String!, $tags: [String]!, $title: String!) {
+      pages {
+        create(content: $content, description: $description, editor: $editor, isPublished: $isPublished, locale: $locale, path: $path, tags: $tags, title: $title) {
+          responseResult {
+            succeeded
+            message
+          }
         }
+      }
     }
     """
 
@@ -516,24 +500,30 @@ def upload_to_wikijs(content, title, session_id):
         'content': content,
         'description': f'Automatisch erstellt durch TresorHaus DocFlow am {timestamp}',
         'editor': 'markdown',
-        'isPrivate': False,
         'isPublished': True,
-        'locale': 'de',
+        'locale': 'de',  # Kann je nach Bedarf auf 'en' geändert werden
         'path': path,
         'tags': ['DocFlow', 'Automatisch'],
-        'title': title
+        'title': title_without_extension
     }
 
     try:
-        # For mutations, we need to use POST with json payload
+        print(f"Sende Wiki.js Request an: {WIKIJS_URL}/graphql")
+        print(f"Headers: {headers}")
+        print(f"Variablen: {variables}")
+
+        # POST mit json payload für die Mutation
         response = requests.post(
-            f'{WIKIJS_URL}/graphql',
+            f'{WIKIJS_URL}/graphql',  # Direkter /graphql Endpunkt wie im curl-Beispiel
             headers=headers,
             json={
                 'query': mutation,
                 'variables': variables
             }
         )
+
+        print(f"Status Code: {response.status_code}")
+
         response.raise_for_status()
         data = response.json()
 
@@ -541,11 +531,16 @@ def upload_to_wikijs(content, title, session_id):
             print(f"GraphQL Fehler: {data['errors']}")
             return False, None
 
+        # Vereinfachter Zugriff auf das Ergebnis entsprechend der curl-Beispielstruktur
         result = data.get('data', {}).get('pages', {}).get('create', {}).get('responseResult', {})
         if result.get('succeeded'):
-            return True, f"{WIKIJS_URL}/{path}"
+            # Konstruiere die vollständige Wiki.js URL zur Seite
+            wiki_url = f"{WIKIJS_URL}/{path}"
+            print(f"Wiki.js Seite erfolgreich erstellt: {wiki_url}")
+            return True, wiki_url
         else:
-            print(f"Wiki.js Fehler: {result.get('message')}")
+            error_message = result.get('message', 'Unbekannter Fehler')
+            print(f"Wiki.js Fehler: {error_message}")
             return False, None
 
     except Exception as e:
@@ -595,11 +590,18 @@ def process_uploads(files, session_id, upload_to_wiki=False):
                 converted_files.append(output_filename)
 
                 if upload_to_wiki:
-                    with open(output_path, 'r', encoding='utf-8') as md_file:
-                        content = md_file.read()
-                        success, wiki_url = upload_to_wikijs(content, output_filename, session_id)
-                        if success:
-                            wiki_urls[output_filename] = wiki_url
+                    print(f"Lade {output_filename} in Wiki.js hoch...")
+                    try:
+                        with open(output_path, 'r', encoding='utf-8') as md_file:
+                            content = md_file.read()
+                            success, wiki_url = upload_to_wikijs(content, output_filename, session_id)
+                            if success:
+                                wiki_urls[output_filename] = wiki_url
+                                print(f"Upload erfolgreich. Wiki URL: {wiki_url}")
+                            else:
+                                print(f"Upload fehlgeschlagen für {output_filename}")
+                    except Exception as e:
+                        print(f"Fehler beim Lesen oder Hochladen von {output_filename}: {str(e)}")
             else:
                 failed_files.append(filename)
 
