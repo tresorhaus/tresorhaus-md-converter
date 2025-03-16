@@ -397,7 +397,13 @@
                         </div>
                     </div>
                 </div>
-                <div id="wikiFileSettings"></div>
+
+                <!-- Collapsible files section -->
+                <div class="files-section-header" id="filesToggleHeader" style="margin-top: 20px; cursor: pointer;">
+                    <h3 style="display: inline-block; margin-right: 10px;">Dokument Ablage anpassen</h3>
+                    <span class="path-toggle" id="filesToggle">[Ausklappen]</span>
+                </div>
+                <div id="wikiFileSettings" style="display: none;"></div>
             </div>
 
             <div class="actions">
@@ -610,6 +616,19 @@
                 wikiFileSettings.innerHTML = '';
 
                 if (fileInput.files.length > 0) {
+                    // Update the toggle text to show number of files
+                    const filesToggle = document.getElementById('filesToggle');
+                    const filesToggleHeader = document.getElementById('filesToggleHeader');
+
+                    if (filesToggle) {
+                        filesToggle.textContent = `[Ausklappen (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})]`;
+                    }
+
+                    // Make the header visible
+                    if (filesToggleHeader) {
+                        filesToggleHeader.style.display = 'block';
+                    }
+
                     for (let i = 0; i < fileInput.files.length; i++) {
                         const file = fileInput.files[i];
                         const fileName = file.name;
@@ -684,6 +703,12 @@
                             validateWikiInput(this);
                         });
                     }
+                } else {
+                    // Hide the files toggle header if no files selected
+                    const filesToggleHeader = document.getElementById('filesToggleHeader');
+                    if (filesToggleHeader) {
+                        filesToggleHeader.style.display = 'none';
+                    }
                 }
             }
 
@@ -756,6 +781,26 @@
             const wikiPathToggle = document.getElementById('wiki_path_toggle');
             const wikiPathDisplay = document.getElementById('wiki_path_display');
             const wikiPathInputContainer = document.getElementById('wiki_path_input_container');
+
+            // Files toggle elements
+            const filesToggleHeader = document.getElementById('filesToggleHeader');
+            const filesToggle = document.getElementById('filesToggle');
+
+            // Function to toggle the files section
+            function toggleFilesSection() {
+                const isVisible = wikiFileSettings.style.display === 'block';
+                wikiFileSettings.style.display = isVisible ? 'none' : 'block';
+                filesToggle.textContent = isVisible ?
+                    `[Ausklappen${fileInput.files.length ? ` (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})` : ''}]` :
+                    '[Einklappen]';
+            }
+
+            // Add click event to files toggle
+            if (filesToggleHeader) filesToggleHeader.addEventListener('click', toggleFilesSection);
+            if (filesToggle) filesToggle.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent double-triggering with the header click
+                toggleFilesSection();
+            });
 
             // Function to toggle Wiki path input visibility
             function toggleWikiPathInput() {
