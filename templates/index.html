@@ -14,110 +14,117 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            line-height: 1.6;
+            line-height: 1.4;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             background-color: #f5f5f5;
             color: #333;
+            font-size: 14px;
         }
         .container {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
             background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        h1, h2 {
+        h1, h2, h3 {
             color: #2c3e50;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
         }
         h1 {
             margin-top: 0;
             text-align: center;
             color: #3498db;
             border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
+            padding-bottom: 8px;
+            font-size: 1.5em;
+        }
+        h3 {
+            font-size: 1.2em;
         }
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             font-weight: bold;
         }
         input[type="file"] {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 8px;
+            border-radius: 3px;
+            padding: 6px;
             width: 100%;
         }
         button {
             background-color: #3498db;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             transition: background-color 0.3s;
         }
         button:hover {
             background-color: #2980b9;
         }
         .file-info {
-            margin-top: 15px;
-            padding: 10px;
+            margin-top: 10px;
+            padding: 8px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 3px;
             background-color: #f9f9f9;
         }
         .wiki-options {
-            margin-top: 20px;
-            padding: 15px;
+            margin-top: 12px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 3px;
             background-color: #f9f9f9;
         }
         .file-detail {
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 8px;
+            padding: 8px;
             border: 1px solid #eee;
-            border-radius: 4px;
+            border-radius: 3px;
             background-color: #fff;
             display: none;
         }
         .logo {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
         .logo img {
-            max-width: 250px;
+            max-width: 180px;
             height: auto;
         }
         .checkbox-container {
-            margin: 15px 0;
+            margin: 10px 0;
         }
         .hidden {
             display: none;
         }
         .file-detail input[type="text"] {
             width: 100%;
-            padding: 8px;
-            margin: 5px 0;
+            padding: 6px;
+            margin: 3px 0;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 3px;
         }
         .input-help {
-            font-size: 12px;
+            font-size: 11px;
             color: #6c757d;
             margin-top: 2px;
         }
         .input-warning {
-            font-size: 12px;
+            font-size: 11px;
             color: #856404;
             background-color: #fff3cd;
-            border-radius: 4px;
-            padding: 5px;
-            margin-top: 5px;
+            border-radius: 3px;
+            padding: 3px;
+            margin-top: 3px;
             display: none;
         }
         .invalid-input {
@@ -127,44 +134,44 @@
         .readonly-field {
             background-color: #f8f9fa;
             border: 1px solid #ced4da;
-            border-radius: 4px;
-            padding: 8px;
-            margin: 5px 0;
+            border-radius: 3px;
+            padding: 6px;
+            margin: 3px 0;
             display: block;
             width: 100%;
             color: #495057;
-            font-size: 14px;
+            font-size: 13px;
         }
         .info-text {
             color: #0c5460;
             background-color: #d1ecf1;
             border-color: #bee5eb;
-            padding: 6px 12px;
-            margin-top: 5px;
-            border-radius: 4px;
-            font-size: 14px;
+            padding: 5px 8px;
+            margin-top: 3px;
+            border-radius: 3px;
+            font-size: 12px;
         }
         /* Footer styles */
         .footer {
             text-align: center;
-            margin-top: 30px;
-            padding: 15px 0;
+            margin-top: 15px;
+            padding: 10px 0;
             border-top: 1px solid #eee;
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: #666;
         }
 
         .footer-buttons {
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
         .small-button {
             background-color: #f8f9fa;
             border: 1px solid #ced4da;
             color: #495057;
-            padding: 5px 10px;
+            padding: 3px 8px;
             font-size: 0.8em;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
             transition: background-color 0.2s;
         }
@@ -175,41 +182,41 @@
 
         /* User settings styles */
         .user-settings {
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 12px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 3px;
             background-color: #f9f9f9;
         }
 
         .user-settings h3 {
             margin-top: 0;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #2c3e50;
         }
 
         .user-settings .input-group {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
         .user-settings input[type="text"] {
             flex-grow: 1;
-            padding: 8px;
+            padding: 6px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
         .settings-toggle {
             background-color: #3498db;
             border: none;
             color: white;
-            padding: 6px 12px;
-            border-radius: 4px;
+            padding: 4px 8px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 0.9em;
+            font-size: 0.85em;
             transition: background-color 0.3s;
         }
 
@@ -218,10 +225,10 @@
         }
 
         .user-greeting {
-            padding: 10px;
+            padding: 6px;
             background-color: #e0f0ff;
-            border-radius: 4px;
-            margin-bottom: 15px;
+            border-radius: 3px;
+            margin-bottom: 8px;
             display: none;
         }
 
@@ -240,19 +247,19 @@
         .modal-content {
             background-color: #fefefe;
             margin: 10% auto;
-            padding: 20px;
+            padding: 15px;
             border: 1px solid #888;
             width: 80%;
-            max-width: 700px;
-            max-height: 80%;
+            max-width: 600px;
+            max-height: 70%;
             overflow-y: auto;
-            border-radius: 5px;
+            border-radius: 4px;
         }
 
         .close {
             color: #aaa;
             float: right;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
             cursor: pointer;
         }
@@ -263,20 +270,20 @@
         }
 
         .modal-actions {
-            margin-top: 15px;
+            margin-top: 12px;
             text-align: right;
         }
 
         .directory-tree {
-            margin-top: 15px;
-            max-height: 400px;
+            margin-top: 12px;
+            max-height: 300px;
             overflow-y: auto;
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 8px;
         }
 
         .directory-item {
-            padding: 5px;
+            padding: 4px;
             cursor: pointer;
             border-bottom: 1px solid #eee;
         }
@@ -290,19 +297,19 @@
         }
 
         .directory-level-0 { margin-left: 0px; }
-        .directory-level-1 { margin-left: 20px; }
-        .directory-level-2 { margin-left: 40px; }
-        .directory-level-3 { margin-left: 60px; }
-        .directory-level-4 { margin-left: 80px; }
-        .directory-level-5 { margin-left: 100px; }
+        .directory-level-1 { margin-left: 15px; }
+        .directory-level-2 { margin-left: 30px; }
+        .directory-level-3 { margin-left: 45px; }
+        .directory-level-4 { margin-left: 60px; }
+        .directory-level-5 { margin-left: 75px; }
 
         /* Path toggle styles */
         .path-toggle {
             cursor: pointer;
             color: #3498db;
             display: inline-block;
-            margin-left: 5px;
-            font-size: 0.9em;
+            margin-left: 4px;
+            font-size: 0.85em;
         }
         .path-toggle:hover {
             text-decoration: underline;
@@ -310,13 +317,13 @@
         .path-display {
             background-color: #f8f9fa;
             border: 1px solid #ced4da;
-            border-radius: 4px;
-            padding: 8px;
-            margin: 5px 0;
+            border-radius: 3px;
+            padding: 6px;
+            margin: 3px 0;
             display: block;
             width: 100%;
             color: #495057;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
         }
         .path-input-container {
@@ -327,15 +334,26 @@
             background-color: #3498db;
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
+            padding: 4px 8px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 0.9em;
-            margin-left: 10px;
+            font-size: 0.85em;
+            margin-left: 8px;
             transition: background-color 0.3s;
         }
         .blue-toggle-btn:hover {
             background-color: #2980b9;
+        }
+        p {
+            margin: 0.5em 0;
+        }
+        /* Make file lists more compact */
+        ul {
+            margin: 6px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 3px;
         }
     </style>
 </head>
