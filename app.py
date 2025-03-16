@@ -221,15 +221,59 @@ INDEX_TEMPLATE = '''
             <div class="checkbox-container">
                 <input type="checkbox" name="upload_to_wiki" id="upload_to_wiki" value="1">
                 <label for="upload_to_wiki">In Wiki.js hochladen</label>
+                <button type="button" id="test-api" class="btn-secondary" style="margin-left: 10px;">API-Verbindung testen</button>
+                <span id="api-test-result" style="margin-left: 10px;"></span>
             </div>
             <div class="form-group">
                 <button type="submit" class="btn">Konvertieren</button>
             </div>
         </form>
+
+        <script>
+        document.getElementById('test-api').addEventListener('click', async () => {
+            const resultSpan = document.getElementById('api-test-result');
+            resultSpan.textContent = 'Teste Verbindung...';
+            resultSpan.style.color = 'gray';
+
+            try {
+                const response = await fetch('/test_wikijs_connection', {
+                    method: 'POST',
+                });
+                const data = await response.json();
+
+                resultSpan.textContent = data.message;
+                resultSpan.style.color = data.success ? '#4CAF50' : '#f44336';
+            } catch (error) {
+                resultSpan.textContent = 'Fehler beim Testen der Verbindung';
+                resultSpan.style.color = '#f44336';
+            }
+        });
+        </script>
+
+        <style>
+        .btn-secondary {
+            background-color: #666;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #555;
+        }
+        #api-test-result {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        </style>
     </div>
 
     <div class="author-info">
-        Entwickelt von Joachim Mild für TresorHaus GmbH © 2024
+        Entwickelt von Joachim Mild für TresorHaus GmbH © 2025
     </div>
 </body>
 </html>
@@ -394,7 +438,7 @@ RESULT_TEMPLATE = '''
     <a href="{{ url_for('index') }}" class="btn">Zurück zur Startseite</a>
 
     <div class="author-info">
-        Entwickelt von Joachim Mild für TresorHaus GmbH © 2024
+        Entwickelt von Joachim Mild für TresorHaus GmbH © 2025
     </div>
 </body>
 </html>
@@ -510,7 +554,7 @@ def upload_to_wikijs(content, title, session_id):
 def convert_to_markdown(input_path, output_path):
     """Konvertiert eine Datei in Markdown mithilfe von pandoc"""
     input_format = get_input_format(input_path)
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    os.makedirs(os.path.dirname(output_path), exist_okay=True)
 
     try:
         subprocess.run([
@@ -530,8 +574,8 @@ def process_uploads(files, session_id, upload_to_wiki=False):
     upload_dir = os.path.join(UPLOAD_FOLDER, session_id)
     result_dir = os.path.join(RESULT_FOLDER, session_id)
 
-    os.makedirs(upload_dir, exist_ok=True)
-    os.makedirs(result_dir, exist_ok=True)
+    os.makedirs(upload_dir, exist_okay=True)
+    os.makedirs(result_dir, exist_okay=True)
 
     converted_files = []
     failed_files = []
@@ -642,6 +686,40 @@ def download_single_file(session_id, filename):
         as_attachment=True,
         mimetype='text/markdown'
     )
+
+@app.route('/test_wikijs_connection', methods=['POST'])
+def test_wikijs_connection():
+    if not WIKIJS_URL or not WIKIJS_TOKEN:
+        return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert'}
+
+    test_query = """
+    query {
+        pages {
+            list {
+                totalCount
+            }
+        }
+    }
+    """
+
+    try:
+        response = requests.post(
+            f'{WIKIJS_URL}/graphql',
+            headers={
+                'Authorization': f'Bearer {WIKIJS_TOKEN}',
+                'Content-Type': 'application/json'
+            },
+            json={'query': test_query}
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        if 'errors' in data:
+            return {'success': False, 'message': f"API-Fehler: {data['errors'][0]['message']}"}
+
+        return {'success': True, 'message': 'Verbindung zu Wiki.js erfolgreich hergestellt!'}
+    except Exception as e:
+        return {'success': False, 'message': f'Verbindungsfehler: {str(e)}'}
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
