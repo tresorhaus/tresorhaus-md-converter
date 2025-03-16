@@ -129,15 +129,21 @@ def upload_to_wikijs(content, title, session_id):
         'Content-Type': 'application/json'
     }
 
-    # Vereinfachte GraphQL mutation für das Erstellen einer neuen Seite
-    # Basierend auf dem bereitgestellten curl-Beispiel
+    # Aktualisierte GraphQL mutation basierend auf dem funktionierenden curl-Beispiel
     mutation = """
-    mutation ($content: String!, $description: String!, $editor: String!, $isPublished: Boolean!, $locale: String!, $path: String!, $tags: [String]!, $title: String!) {
+    mutation Page ($content: String!, $description: String!, $editor: String!, $isPublished: Boolean!, $isPrivate: Boolean!, $locale: String!, $path: String!, $tags: [String]!, $title: String!) {
       pages {
-        create(content: $content, description: $description, editor: $editor, isPublished: $isPublished, locale: $locale, path: $path, tags: $tags, title: $title) {
+        create (content: $content, description: $description, editor: $editor, isPublished: $isPublished, isPrivate: $isPrivate, locale: $locale, path: $path, tags: $tags, title: $title) {
           responseResult {
-            succeeded
+            succeeded,
+            errorCode,
+            slug,
             message
+          },
+          page {
+            id,
+            path,
+            title
           }
         }
       }
@@ -149,10 +155,11 @@ def upload_to_wikijs(content, title, session_id):
         'description': f'Automatisch erstellt durch TresorHaus DocFlow am {timestamp}',
         'editor': 'markdown',
         'isPublished': True,
-        'locale': 'de',  # Kann je nach Bedarf auf 'en' geändert werden
+        'isPrivate': False,  # Hinzugefügt entsprechend dem curl-Beispiel
+        'locale': 'de',
         'path': path,
         'tags': ['DocFlow', 'Automatisch'],
-        'title': title_without_extension  # Immer ohne .md Erweiterung
+        'title': title_without_extension
     }
 
     # Erstelle die vollständige Request-Payload für Debug-Zwecke
@@ -182,7 +189,7 @@ def upload_to_wikijs(content, title, session_id):
 
         # POST mit json payload für die Mutation
         response = requests.post(
-            f'{WIKIJS_URL}/graphql',  # Direkter /graphql Endpunkt wie im curl-Beispiel
+            f'{WIKIJS_URL}/graphql',
             headers=headers,
             json=request_payload
         )
@@ -207,16 +214,22 @@ def upload_to_wikijs(content, title, session_id):
             log_debug(f"GraphQL Fehler: {error_msg}", "error")
             return False, None
 
-        # Vereinfachter Zugriff auf das Ergebnis entsprechend der curl-Beispielstruktur
+        # Aktualisierte Überprüfung der Antwort basierend auf dem curl-Beispiel
         result = data.get('data', {}).get('pages', {}).get('create', {}).get('responseResult', {})
         if result.get('succeeded'):
+            # Extrahiere die page_id und den tatsächlichen Pfad aus der Antwort
+            page = data.get('data', {}).get('pages', {}).get('create', {}).get('page', {})
+            page_id = page.get('id')
+            actual_path = page.get('path')
+
             # Konstruiere die vollständige Wiki.js URL zur Seite
-            wiki_url = f"{WIKIJS_URL}/{path}"
-            log_debug(f"Wiki.js Seite erfolgreich erstellt: {wiki_url}", "success")
+            wiki_url = f"{WIKIJS_URL}/{actual_path}"
+            log_debug(f"Wiki.js Seite erfolgreich erstellt: {wiki_url} (ID: {page_id})", "success")
             return True, wiki_url
         else:
             error_message = result.get('message', 'Unbekannter Fehler')
-            log_debug(f"Wiki.js Fehler: {error_message}", "error")
+            error_code = result.get('errorCode', 'Kein Code')
+            log_debug(f"Wiki.js Fehler: {error_message} (Code: {error_code})", "error")
             return False, None
 
     except Exception as e:
