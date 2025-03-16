@@ -358,6 +358,8 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
     if wiki_titles is None:
         wiki_titles = {}
 
+    log_debug(f"Wiki Titel: {wiki_titles}", "info")
+
     # Create directories if they don't exist
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)

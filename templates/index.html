@@ -119,6 +119,26 @@
             border-color: #dc3545;
             background-color: #f8d7da;
         }
+        .readonly-field {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 5px 0;
+            display: block;
+            width: 100%;
+            color: #495057;
+            font-size: 14px;
+        }
+        .info-text {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            padding: 6px 12px;
+            margin-top: 5px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -144,7 +164,7 @@
 
             <div id="wikiOptions" class="wiki-options hidden">
                 <h3>Wiki.js Einstellungen</h3>
-                <p>Definieren Sie für jede Datei, wo und wie sie in Wiki.js hochgeladen werden soll.</p>
+                <p>Definieren Sie für jede Datei, wo sie in Wiki.js hochgeladen werden soll.</p>
                 <div id="wikiFileSettings"></div>
             </div>
 
@@ -164,9 +184,8 @@
             const wikiFileSettings = document.getElementById('wikiFileSettings');
             const testWikiButton = document.getElementById('testWikiButton');
 
-            // Regulärer Ausdruck für gültige Wiki.js-Pfade und Titel
+            // Regulärer Ausdruck für gültige Wiki.js-Pfade
             const validPathRegex = /^[a-zA-Z0-9\-_\/]+$/;
-            const validTitleRegex = /^[a-zA-Z0-9 \-_]+$/;
 
             // Funktion zum Sanitieren von Wiki.js Seitentiteln
             function sanitizeWikiTitle(title) {
@@ -198,8 +217,8 @@
                 return normalizedPath.replace(/ /g, '-').replace(/[^a-zA-Z0-9\-_\/]/g, '').trim();
             }
 
-            // Function to validate and show warnings for Wiki.js inputs
-            function validateWikiInput(input, isPath) {
+            // Function to validate Wiki.js path input
+            function validateWikiInput(input) {
                 const value = input.value.trim();
                 const warningId = `warning-${input.id}`;
                 let warning = document.getElementById(warningId);
@@ -211,22 +230,12 @@
                     input.insertAdjacentElement('afterend', warning);
                 }
 
-                if (isPath) {
-                    // Validate path (no spaces, no special chars)
-                    if (value && !validPathRegex.test(value)) {
-                        input.classList.add('invalid-input');
-                        warning.textContent = 'Ungültige Zeichen! Nur Buchstaben, Zahlen, Bindestriche, Unterstriche und Schrägstriche sind erlaubt.';
-                        warning.style.display = 'block';
-                        return false;
-                    }
-                } else {
-                    // Validate title (no special chars)
-                    if (value && !validTitleRegex.test(value)) {
-                        input.classList.add('invalid-input');
-                        warning.textContent = 'Ungültige Zeichen! Nur Buchstaben, Zahlen, Leerzeichen, Bindestriche und Unterstriche sind erlaubt.';
-                        warning.style.display = 'block';
-                        return false;
-                    }
+                // Validate path (no spaces, no special chars)
+                if (value && !validPathRegex.test(value)) {
+                    input.classList.add('invalid-input');
+                    warning.textContent = 'Ungültige Zeichen! Nur Buchstaben, Zahlen, Bindestriche, Unterstriche und Schrägstriche sind erlaubt.';
+                    warning.style.display = 'block';
+                    return false;
                 }
 
                 input.classList.remove('invalid-input');
@@ -289,10 +298,12 @@
                         fileDetail.innerHTML = `
                             <h4>Datei: ${fileName}</h4>
                             <div>
-                                <label for="wiki_title_${i}">Wiki.js Seitentitel:</label>
-                                <input type="text" id="wiki_title_${i}" name="wiki_title_${i}"
-                                       value="${sanitizedTitle}" placeholder="Titel der Wiki-Seite">
-                                <div class="input-help">Erlaubt: Buchstaben, Zahlen, Leerzeichen, Bindestriche, Unterstriche</div>
+                                <label>Wiki.js Seitentitel:</label>
+                                <div class="readonly-field">${sanitizedTitle}</div>
+                                <input type="hidden" name="wiki_title_${i}" value="${sanitizedTitle}">
+                                <div class="info-text">
+                                    Der Titel wurde automatisch optimiert für Wiki.js
+                                </div>
                             </div>
                             <div>
                                 <label for="wiki_path_${i}">Wiki.js Pfad:</label>
@@ -304,51 +315,7 @@
 
                         wikiFileSettings.appendChild(fileDetail);
 
-                        // Show notification if title was sanitized
-                        if (sanitizedTitle !== fileNameWithoutExt) {
-                            const titleInput = document.getElementById(`wiki_title_${i}`);
-                            const notificationDiv = document.createElement('div');
-                            notificationDiv.className = 'input-help';
-                            notificationDiv.style.color = '#856404';
-                            notificationDiv.innerHTML = `Der Titel wurde automatisch bereinigt von "<b>${fileNameWithoutExt}</b>" zu "<b>${sanitizedTitle}</b>"`;
-                            titleInput.insertAdjacentElement('afterend', notificationDiv);
-                        }
-
                         // Add event listeners for real-time sanitization
-                        const titleInput = document.getElementById(`wiki_title_${i}`);
-                        titleInput.addEventListener('input', function() {
-                            // Store original value for comparison
-                            const originalValue = this.value;
-                            // Auto-sanitize title on input and update the field
-                            const sanitizedValue = sanitizeWikiTitle(originalValue);
-
-                            // Only update if there's a difference to avoid moving cursor position unnecessarily
-                            if (sanitizedValue !== originalValue) {
-                                this.value = sanitizedValue;
-
-                                // Show a temporary notification about the auto-sanitization
-                                const infoId = `sanitize-info-${this.id}`;
-                                let infoEl = document.getElementById(infoId);
-
-                                if (!infoEl) {
-                                    infoEl = document.createElement('div');
-                                    infoEl.id = infoId;
-                                    infoEl.className = 'input-help';
-                                    infoEl.style.color = '#856404';
-                                    this.insertAdjacentElement('afterend', infoEl);
-                                }
-
-                                infoEl.textContent = 'Zeichen automatisch bereinigt';
-
-                                // Clear the message after 2 seconds
-                                setTimeout(() => {
-                                    infoEl.textContent = '';
-                                }, 2000);
-                            }
-
-                            validateWikiInput(this, false);
-                        });
-
                         const pathInput = document.getElementById(`wiki_path_${i}`);
                         pathInput.addEventListener('input', function() {
                             // Store original value for comparison
@@ -360,7 +327,7 @@
                                 this.value = sanitizedValue;
                             }
 
-                            validateWikiInput(this, true);
+                            validateWikiInput(this);
                         });
                     }
                 }
@@ -371,16 +338,10 @@
                 if (wikiUpload.checked) {
                     let hasErrors = false;
 
-                    // Check all title and path inputs
+                    // Check all path inputs
                     for (let i = 0; i < fileInput.files.length; i++) {
-                        const titleInput = document.getElementById(`wiki_title_${i}`);
                         const pathInput = document.getElementById(`wiki_path_${i}`);
-
-                        if (titleInput && !validateWikiInput(titleInput, false)) {
-                            hasErrors = true;
-                        }
-
-                        if (pathInput && !validateWikiInput(pathInput, true)) {
+                        if (pathInput && !validateWikiInput(pathInput)) {
                             hasErrors = true;
                         }
                     }
