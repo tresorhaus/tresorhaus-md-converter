@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TresorHaus DocFlow - Dokumentenkonverter</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        .logo-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .logo {
+            max-width: 300px;
+            height: auto;
+            margin: 0 auto;
+        }
+        .app-title {
+            text-align: center;
+            color: #C4A962;
+            margin: 20px 0;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .app-subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .btn {
+            background-color: #C4A962;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #B39855;
+        }
+        .flash-messages {
+            color: #d9534f;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .format-info {
+            background-color: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .format-list {
+            columns: 3;
+            -webkit-columns: 3;
+            -moz-columns: 3;
+            list-style-type: none;
+            padding-left: 0;
+            margin-top: 10px;
+        }
+        .format-list li {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input[type="file"] {
+            padding: 10px;
+            border: 2px dashed #C4A962;
+            border-radius: 4px;
+            width: 100%;
+            margin-top: 5px;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .author-info {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+        }
+        .debug-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .debug-container h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .debug-log {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+        }
+        .debug-log li {
+            margin-bottom: 5px;
+            padding: 3px 0;
+            border-bottom: 1px dotted #eee;
+        }
+        .debug-toggle {
+            background-color: #f1f1f1;
+            border: none;
+            color: #666;
+            padding: 5px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 12px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn-secondary {
+            background-color: #666;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #555;
+        }
+        #api-test-result {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='tresorhaus-logo.png') }}" alt="TresorHaus Logo" class="logo">
+    </div>
+
+    <div class="app-title">TresorHaus DocFlow</div>
+    <div class="app-subtitle">Dokumentenkonverter</div>
+
+    <div class="container">
+        <div class="format-info">
+            <h3>Unterstützte Dateiformate:</h3>
+            <ul class="format-list">
+                <li>.doc, .docx (Word)</li>
+                <li>.odt (OpenOffice/LibreOffice)</li>
+                <li>.rtf (Rich Text Format)</li>
+                <li>.tex (LaTeX)</li>
+                <li>.html, .htm (HTML)</li>
+                <li>.epub (E-Book)</li>
+                <li>.ppt, .pptx (PowerPoint)</li>
+                <li>.odp (Impress)</li>
+                <li>.rst (reStructuredText)</li>
+                <li>.textile (Textile)</li>
+                <li>.wiki (MediaWiki)</li>
+                <li>.dbk, .xml (DocBook)</li>
+                <li>.adoc, .asciidoc (AsciiDoc)</li>
+                <li>.org (Org-mode)</li>
+            </ul>
+        </div>
+
+        {% if get_flashed_messages() %}
+        <div class="flash-messages">
+            {% for message in get_flashed_messages() %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="files">Wähle Dateien zum Konvertieren aus:</label>
+                <input type="file" name="files" id="files" multiple>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" name="upload_to_wiki" id="upload_to_wiki" value="1">
+                <label for="upload_to_wiki">In Wiki.js hochladen</label>
+                <button type="button" id="test-api" class="btn-secondary" style="margin-left: 10px;">API-Verbindung testen</button>
+                <span id="api-test-result" style="margin-left: 10px;"></span>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn">Konvertieren</button>
+            </div>
+        </form>
+
+        <button id="debug-toggle" class="debug-toggle">Debug-Informationen anzeigen</button>
+        <div id="debug-container" class="debug-container" style="display: none;">
+            <h4>Debug-Log</h4>
+            <ul id="debug-log" class="debug-log"></ul>
+        </div>
+
+        <script>
+        // API-Test Funktionalität
+        document.getElementById('test-api').addEventListener('click', async () => {
+            const resultSpan = document.getElementById('api-test-result');
+            const debugLog = document.getElementById('debug-log');
+
+            resultSpan.textContent = 'Teste Verbindung...';
+            resultSpan.style.color = 'gray';
+
+            // Log debug info
+            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Starte API-Verbindungstest...</li>`;
+
+            try {
+                const response = await fetch('/test_wikijs_connection', {
+                    method: 'POST',
+                });
+                const data = await response.json();
+
+                resultSpan.textContent = data.message;
+                resultSpan.style.color = data.success ? '#4CAF50' : '#f44336';
+
+                // Log response details
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: API-Test Antwort: ${data.success ? 'Erfolg' : 'Fehlgeschlagen'}</li>`;
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Nachricht: ${data.message}</li>`;
+            } catch (error) {
+                resultSpan.textContent = 'Fehler beim Testen der Verbindung';
+                resultSpan.style.color = '#f44336';
+
+                // Log error
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Fehler beim API-Test: ${error.message}</li>`;
+            }
+        });
+
+        // Form submission with debug logging
+        document.querySelector('form').addEventListener('submit', function() {
+            const debugLog = document.getElementById('debug-log');
+            const uploadToWiki = document.getElementById('upload_to_wiki').checked;
+
+            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Formular wird abgesendet...</li>`;
+            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Wiki.js Upload aktiviert: ${uploadToWiki ? 'Ja' : 'Nein'}</li>`;
+
+            const files = document.getElementById('files').files;
+            if (files.length > 0) {
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: ${files.length} Datei(en) ausgewählt: ${Array.from(files).map(f => f.name).join(', ')}</li>`;
+            } else {
+                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Keine Dateien ausgewählt</li>`;
+            }
+        });
+
+        // Toggle debug panel
+        document.getElementById('debug-toggle').addEventListener('click', function() {
+            const debugContainer = document.getElementById('debug-container');
+            if (debugContainer.style.display === 'none') {
+                debugContainer.style.display = 'block';
+                this.textContent = 'Debug-Informationen ausblenden';
+            } else {
+                debugContainer.style.display = 'none';
+                this.textContent = 'Debug-Informationen anzeigen';
+            }
+        });
+        </script>
+    </div>
+
+    <div class="author-info">
+        Entwickelt von Joachim Mild für TresorHaus GmbH © 2025
+    </div>
+</body>
+</html>
