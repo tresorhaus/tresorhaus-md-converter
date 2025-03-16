@@ -550,7 +550,11 @@ def upload_to_wikijs(content, title, session_id):
 def convert_to_markdown(input_path, output_path):
     """Konvertiert eine Datei in Markdown mithilfe von pandoc"""
     input_format = get_input_format(input_path)
-    os.makedirs(os.path.dirname(output_path), exist_okay=True)
+
+    # Create directory if it doesn't exist
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     try:
         subprocess.run([
@@ -570,8 +574,11 @@ def process_uploads(files, session_id, upload_to_wiki=False):
     upload_dir = os.path.join(UPLOAD_FOLDER, session_id)
     result_dir = os.path.join(RESULT_FOLDER, session_id)
 
-    os.makedirs(upload_dir, exist_okay=True)
-    os.makedirs(result_dir, exist_okay=True)
+    # Create directories if they don't exist
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+    if not os.path.exists(result_dir):
+        os.makedirs(result_dir)
 
     converted_files = []
     failed_files = []
