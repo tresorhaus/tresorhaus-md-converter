@@ -203,17 +203,26 @@
         }
 
         .settings-toggle {
-            background-color: transparent;
+            background-color: #3498db;
             border: none;
-            color: #3498db;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
             cursor: pointer;
-            text-decoration: underline;
-            padding: 0;
             font-size: 0.9em;
+            transition: background-color 0.3s;
         }
 
         .settings-toggle:hover {
-            color: #2980b9;
+            background-color: #2980b9;
+        }
+
+        .user-greeting {
+            padding: 10px;
+            background-color: #e0f0ff;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
         }
 
         .modal {
@@ -296,6 +305,11 @@
         <h1>TresorHaus DocFlow</h1>
         <p>Konvertieren Sie Ihre Dokumente nach Markdown und laden Sie sie optional direkt in Ihr Wiki.js hoch.</p>
 
+        <!-- User Greeting -->
+        <div class="user-greeting" id="userGreeting" style="display: none;">
+            <strong>Willkommen zurück, <span id="greetingUsername"></span>!</strong>
+        </div>
+
         <!-- User Settings Section -->
         <div class="user-settings" id="userSettingsSection" style="display: none;">
             <h3>Benutzereinstellungen</h3>
@@ -327,7 +341,7 @@
 
             <div id="wikiOptions" class="wiki-options hidden">
                 <h3>Wiki.js Einstellungen</h3>
-                <p>Definieren Sie für jede Datei, wo sie in Wiki.js hochgeladen werden soll.</p>
+                <p>Definieren Sie für jede Datei, wo sie in Wiki.js hochgeladen werden soll. Wenn kein Pfad angegeben wird, wird automatisch ein strukturierter Pfad erstellt.</p>
                 <div id="defaultFolderSection">
                     <label for="defaultFolder">Standard-Ordner:</label>
                     <div class="input-group wiki-path-selector" style="margin-top: 5px;">
@@ -410,6 +424,14 @@
                     usernameInput.value = savedUsername;
                     usernameHidden.value = savedUsername;
                     updateUserDisplay(savedUsername);
+
+                    // Show greeting
+                    const userGreeting = document.getElementById('userGreeting');
+                    const greetingUsername = document.getElementById('greetingUsername');
+                    if (userGreeting && greetingUsername) {
+                        greetingUsername.textContent = savedUsername;
+                        userGreeting.style.display = 'block';
+                    }
                 }
             }
 
@@ -418,8 +440,15 @@
                 // Update the hidden field
                 usernameHidden.value = username;
 
-                // You could add more UI elements showing the current user here
-                // For example, adding the username to the header or footer
+                // Show greeting if username is set
+                const userGreeting = document.getElementById('userGreeting');
+                const greetingUsername = document.getElementById('greetingUsername');
+                if (username && userGreeting && greetingUsername) {
+                    greetingUsername.textContent = username;
+                    userGreeting.style.display = 'block';
+                } else if (userGreeting) {
+                    userGreeting.style.display = 'none';
+                }
 
                 // Update the placeholder in the default folder input if it exists
                 if (defaultFolder) {
@@ -603,9 +632,10 @@
                 const username = usernameHidden.value.trim();
                 if (!username) {
                     event.preventDefault();
-                    alert('Bitte geben Sie einen Benutzernamen in den Einstellungen ein.');
+                    alert('Bitte geben Sie zuerst einen Benutzernamen in den Einstellungen ein, bevor Sie fortfahren können.');
                     userSettingsSection.style.display = 'block';
                     toggleSettings.textContent = 'Benutzereinstellungen ausblenden';
+                    usernameInput.focus();
                     return;
                 }
 
