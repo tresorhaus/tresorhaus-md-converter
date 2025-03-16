@@ -161,11 +161,3 @@ Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe die [LICENSE](LICENSE
   Entwickelt mit ❤️ von Joachim Mild für TresorHaus
 </p>
 ```
-
-Aktualisierung im Template (füge dies am Ende beider Templates vor `</body>` ein):
-```html
-    <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee;">
-        Entwickelt von Joachim Mild für TresorHaus GmbH © 2024
-    </div>
-</body>
-```
