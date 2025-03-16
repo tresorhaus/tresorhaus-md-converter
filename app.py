@@ -167,6 +167,33 @@ def sanitize_wikijs_title(title):
 
     return sanitized
 
+def clean_markdown_content(content):
+    """
+    Bereinigt Markdown von typischen Konvertierungsartefakten.
+    Entfernt:
+    - '> ' am Beginn von Zeilen (Zitate, die keine sein sollten)
+    - "**\" Sonderzeichen
+    - "Seite X von X" Marker
+    - Andere häufige Artefakte
+    """
+    # Entferne "Seite X von X" Marker mit unterschiedlichen Formatierungen
+    content = re.sub(r'([Ss]eite\s+\d+\s+von\s+\d+)', '', content)
+
+    # Entferne "> " am Beginn von Zeilen, wenn es kein beabsichtigtes Zitat ist
+    content = re.sub(r'^>\s+(?![\w>])', '', content, flags=re.MULTILINE)
+
+    # Entferne "**\" Artefakte
+    content = re.sub(r'\*\*\\', '', content)
+
+    # Entferne doppelte Leerzeilen
+    while "\n\n\n" in content:
+        content = content.replace("\n\n\n", "\n\n")
+
+    # Entferne Leerzeilen am Anfang und Ende
+    content = content.strip()
+
+    return content
+
 def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=None, username=None, default_folder=None):
     """Lädt eine Markdown-Datei in Wiki.js hoch"""
     if not WIKIJS_URL or not WIKIJS_TOKEN:
@@ -174,7 +201,7 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
         return False, None
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    date_only = datetime.now().strftime("%Y-%m-%d")
+    date_with_time = datetime.now().strftime("%Y-%m-%d-%H%M")
 
     # Entferne .md Erweiterung aus dem Titel wenn vorhanden
     title_without_extension = title
@@ -198,12 +225,16 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
         if original_path != path:
             log_debug(f"Pfad wurde sanitiert: '{original_path}' → '{path}'", "info")
     else:
-        # Erstelle einen Standard-Pfad mit Benutzernamen und Datum
+        # Erstelle einen Standard-Pfad mit Benutzernamen und Datum+Uhrzeit
         safe_username = sanitize_wikijs_path(username) if username else "anonymous"
         base_folder = sanitize_wikijs_path(default_folder) if default_folder else "DocFlow"
-        default_path = f"{base_folder}/{safe_username}/{date_only}/{title_without_extension}"
+        default_path = f"{base_folder}/{safe_username}/{date_with_time}/{title_without_extension}"
         path = sanitize_wikijs_path(default_path)
         log_debug(f"Kein Pfad angegeben. Verwende Standard-Pfad: {path}", "info")
+
+    # Bereinige den Markdown-Inhalt von typischen Konvertierungsartefakten
+    cleaned_content = clean_markdown_content(content)
+    log_debug(f"Markdown-Inhalt bereinigt. {len(content) - len(cleaned_content)} Zeichen entfernt.", "info")
 
     log_debug(f"Starte Upload zu Wiki.js: {title_without_extension}", "api")
     log_debug(f"Ziel-Pfad: {path}", "api")
@@ -235,7 +266,7 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
     """
 
     variables = {
-        'content': content,
+        'content': cleaned_content,  # Verwende den bereinigten Inhalt statt des Originals
         'description': f'Automatisch erstellt durch TresorHaus DocFlow am {timestamp}',
         'editor': 'markdown',
         'isPublished': True,

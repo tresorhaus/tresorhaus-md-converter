@@ -262,7 +262,7 @@
                     <div class="input-group" style="margin-top: 5px;">
                         <input type="text" id="defaultFolder" name="default_folder" placeholder="z.B. Dokumentation/Benutzer" style="flex-grow: 1;">
                         <div class="info-text" style="width: 100%; margin-top: 5px;">
-                            Falls kein Pfad angegeben wird, werden Dateien im Format "[Standard-Ordner]/[Benutzername]/[Datum]/[Dateiname]" gespeichert.
+                            Falls kein Pfad angegeben wird, werden Dateien im Format "[Standard-Ordner]/[Benutzername]/[Datum-Uhrzeit]/[Dateiname]" gespeichert.
                         </div>
                     </div>
                 </div>
@@ -509,7 +509,7 @@
                             <div>
                                 <label for="wiki_path_${i}">Wiki.js Pfad:</label>
                                 <input type="text" id="wiki_path_${i}" name="wiki_path_${i}"
-                                       placeholder="z.B. ${defaultFolder ? defaultFolder.value : 'Dokumentation'}/${usernameHidden.value || 'Benutzer'}/${new Date().toISOString().split('T')[0]}">
+                                       placeholder="z.B. ${defaultFolder ? defaultFolder.value : 'Dokumentation'}/${usernameHidden.value || 'Benutzer'}/${new Date().toISOString().split('T')[0]}-${new Date().getHours()}${new Date().getMinutes()}">
                                 <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
                             </div>
                         `;
