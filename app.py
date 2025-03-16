@@ -602,7 +602,7 @@ RESULT_TEMPLATE = '''
 '''
 
 # Favicon Route
-@app.route('/static/favicon.ico')
+@app.route('/favicon.ico')
 def favicon():
     return send_from_directory(
         os.path.join(app.root_path, 'static'),
@@ -634,20 +634,20 @@ def log_debug(message, log_type='info'):
 
 def upload_to_wikijs(content, title, session_id):
     """Lädt eine Markdown-Datei in Wiki.js hoch"""
-    if not WIKIJS_URL or not WIKIJS_TOKEN:KEN:
+    if not WIKIJS_URL or not WIKIJS_TOKEN:
         log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
         return False, None
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = f"DocFlow/{session_id}_{timestamp}/{title}"
-    # Entferne .md Erweiterung aus dem Titel und dem Pfad
+
     # Entferne .md Erweiterung aus dem Titel wenn vorhanden
-    title_without_extension = title):
-    if title.lower().endswith('.md'):le[:-3]
+    title_without_extension = title
+    if title.lower().endswith('.md'):
         title_without_extension = title[:-3]
+
     # Verwende den Titel ohne .md Erweiterung im Pfad
-    log_debug(f"Starte Upload zu Wiki.js: {title_without_extension}", "api")
-    log_debug(f"Ziel-Pfad: {path}", "api")
+    path = f"DocFlow/{session_id}_{timestamp}/{title_without_extension}"
+
     log_debug(f"Starte Upload zu Wiki.js: {title_without_extension}", "api")
     log_debug(f"Ziel-Pfad: {path}", "api")
 
@@ -790,198 +790,196 @@ def process_uploads(files, session_id, upload_to_wiki=False):
                     try:
                         with open(output_path, 'r', encoding='utf-8') as md_file:
                             content = md_file.read()
-                            log_debug(f"Markdown-Datei gelesen: {len(content)} Zeichen", "api")ki_url = upload_to_wikijs(content, output_filename, session_id)
+                            log_debug(f"Markdown-Datei gelesen: {len(content)} Zeichen", "api")
                             success, wiki_url = upload_to_wikijs(content, output_filename, session_id)
                             if success:
-                                wiki_urls[output_filename] = wiki_urlog_debug(f"Wiki.js Upload erfolgreich: {wiki_url}", "success")
+                                wiki_urls[output_filename] = wiki_url
                                 log_debug(f"Wiki.js Upload erfolgreich: {wiki_url}", "success")
-                            else:f"Wiki.js Upload fehlgeschlagen für {output_filename}", "error")
+                            else:
                                 log_debug(f"Wiki.js Upload fehlgeschlagen für {output_filename}", "error")
-                    except Exception as e:       log_debug(f"Fehler beim Lesen/Hochladen von {output_filename}: {str(e)}", "error")
+                    except Exception as e:
                         log_debug(f"Fehler beim Lesen/Hochladen von {output_filename}: {str(e)}", "error")
-            else:lgeschlagen: {filename}", "error")
-                log_debug(f"Konvertierung fehlgeschlagen: {filename}", "error")   failed_files.append(filename)
+            else:
+                log_debug(f"Konvertierung fehlgeschlagen: {filename}", "error")
                 failed_files.append(filename)
         else:
-            if not file:og_debug("Leerer Datei-Eintrag übersprungen", "error")
+            if not file:
                 log_debug("Leerer Datei-Eintrag übersprungen", "error")
-            else:                log_debug(f"Ungültiges Dateiformat: {file.filename}", "error")
+            else:
                 log_debug(f"Ungültiges Dateiformat: {file.filename}", "error")
-nverted_files)} konvertiert, {len(failed_files)} fehlgeschlagen")
-    log_debug(f"Verarbeitung abgeschlossen: {len(converted_files)} konvertiert, {len(failed_files)} fehlgeschlagen")    return converted_files, failed_files, wiki_urls
+
+    log_debug(f"Verarbeitung abgeschlossen: {len(converted_files)} konvertiert, {len(failed_files)} fehlgeschlagen")
     return converted_files, failed_files, wiki_urls
 
-def create_zip_file(session_id):arkdown-Dateien"""
-    """Erstellt eine ZIP-Datei mit allen konvertierten Markdown-Dateien"""RESULT_FOLDER, session_id)
-    result_dir = os.path.join(RESULT_FOLDER, session_id)    memory_file = io.BytesIO()
+def create_zip_file(session_id):
+    """Erstellt eine ZIP-Datei mit allen konvertierten Markdown-Dateien"""
+    result_dir = os.path.join(RESULT_FOLDER, session_id)
     memory_file = io.BytesIO()
-.ZIP_DEFLATED) as zf:
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:os.walk(result_dir):
+
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
         for root, _, files in os.walk(result_dir):
             for file in files:
-                file_path = os.path.join(root, file)le_path, result_dir)
-                rel_path = os.path.relpath(file_path, result_dir)                zf.write(file_path, rel_path)
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, result_dir)
                 zf.write(file_path, rel_path)
-)
-    memory_file.seek(0)    return memory_file
+
+    memory_file.seek(0)
     return memory_file
 
 def cleanup_session(session_id):
     """Bereinigt die temporären Dateien einer Session"""
-    upload_dir = os.path.join(UPLOAD_FOLDER, session_id)    result_dir = os.path.join(RESULT_FOLDER, session_id)
+    upload_dir = os.path.join(UPLOAD_FOLDER, session_id)
     result_dir = os.path.join(RESULT_FOLDER, session_id)
-:
+
     if os.path.exists(upload_dir):
-        shutil.rmtree(upload_dir):
-    if os.path.exists(result_dir):        shutil.rmtree(result_dir)
+        shutil.rmtree(upload_dir)
+    if os.path.exists(result_dir):
         shutil.rmtree(result_dir)
-/', methods=['GET', 'POST'])
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        if 'files' not in request.files:hlt')
-            flash('Keine Dateien ausgewählt')            return redirect(request.url)
+        if 'files' not in request.files:
+            flash('Keine Dateien ausgewählt')
             return redirect(request.url)
 
-        files = request.files.getlist('files')        upload_to_wiki = 'upload_to_wiki' in request.form
+        files = request.files.getlist('files')
         upload_to_wiki = 'upload_to_wiki' in request.form
-'':
-        if not files or files[0].filename == '':hlt')
-            flash('Keine Dateien ausgewählt')            return redirect(request.url)
+
+        if not files or files[0].filename == '':
+            flash('Keine Dateien ausgewählt')
             return redirect(request.url)
 
-        session_id = str(uuid.uuid4())        converted_files, failed_files, wiki_urls = process_uploads(files, session_id, upload_to_wiki)
+        session_id = str(uuid.uuid4())
         converted_files, failed_files, wiki_urls = process_uploads(files, session_id, upload_to_wiki)
 
-        if not converted_files und nicht failed_files:n zum Konvertieren gefunden')
-            flash('Keine gültigen Dateien zum Konvertieren gefunden')            return redirect(request.url)
+        if not converted_files and not failed_files:
+            flash('Keine gültigen Dateien zum Konvertieren gefunden')
             return redirect(request.url)
-te_string(
+
         return render_template_string(
-            RESULT_TEMPLATE,files,
-            converted_files=converted_files,files,
+            RESULT_TEMPLATE,
+            converted_files=converted_files,
             failed_files=failed_files,
             wiki_urls=wiki_urls,
             session_id=session_id,
-            debug_logs=debug_logs,   wiki_requested=upload_to_wiki
-            wiki_requested=upload_to_wiki        )
+            debug_logs=debug_logs,
+            wiki_requested=upload_to_wiki
         )
+
     return render_template_string(INDEX_TEMPLATE)
-    return render_template_string(INDEX_TEMPLATE)
->', methods=['GET'])
+
 @app.route('/download/<session_id>', methods=['GET'])
-def download_results(session_id):le(session_id)
-    memory_file = create_zip_file(session_id)    cleanup_session(session_id)
+def download_results(session_id):
+    memory_file = create_zip_file(session_id)
     cleanup_session(session_id)
-(
+
     return send_file(
-        memory_file,erted_markdown_files.zip',
+        memory_file,
         download_name='converted_markdown_files.zip',
-        as_attachment=True,   mimetype='application/zip'
-        mimetype='application/zip'    )
+        as_attachment=True,
+        mimetype='application/zip'
     )
-name>', methods=['GET'])
+
 @app.route('/download_single/<session_id>/<filename>', methods=['GET'])
-def download_single_file(session_id, filename):    file_path = os.path.join(RESULT_FOLDER, session_id, filename)
+def download_single_file(session_id, filename):
     file_path = os.path.join(RESULT_FOLDER, session_id, filename)
 
     if not os.path.exists(file_path):
-        flash('Datei nicht gefunden')        return redirect(url_for('index'))
+        flash('Datei nicht gefunden')
         return redirect(url_for('index'))
-le(
+
     return send_file(
-        file_path,ame,
+        file_path,
         download_name=filename,
-        as_attachment=True,   mimetype='text/markdown'
-        mimetype='text/markdown'    )
+        as_attachment=True,
+        mimetype='text/markdown'
     )
-ection', methods=['POST'])
-@app.route('/test_wikijs_connection', methods=['POST'])ction():
+
+@app.route('/test_wikijs_connection', methods=['POST'])
 def test_wikijs_connection():
-    global debug_logs    debug_logs = []  # Zurücksetzen der Debug-Logs
+    global debug_logs
     debug_logs = []  # Zurücksetzen der Debug-Logs
 
-    if not WIKIJS_URL oder nicht WIKIJS_TOKEN:
-        log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")        return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert'}
+    if not WIKIJS_URL or not WIKIJS_TOKEN:
+        log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
         return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert'}
-st connection using pages list query
+
     # Test connection using pages list query
     try:
         # Use a simple query to list pages
-        test_query = "{pages{list{id,title,path,contentType}}}"        log_debug(f"Teste Wiki.js Verbindung zu: {WIKIJS_URL}", "api")
+        test_query = "{pages{list{id,title,path,contentType}}}"
         log_debug(f"Teste Wiki.js Verbindung zu: {WIKIJS_URL}", "api")
-ery parameter
+
         # URL encode the query parameter
-        import urllib.parse        encoded_query = urllib.parse.quote(test_query)
+        import urllib.parse
         encoded_query = urllib.parse.quote(test_query)
 
-        headers = {   'Authorization': f'Bearer {WIKIJS_TOKEN}'
+        headers = {
             'Authorization': f'Bearer {WIKIJS_TOKEN}'
-        }        log_debug(f"Sende GET-Anfrage an: {WIKIJS_URL}/graphql/pages/list", "api")
+        }
         log_debug(f"Sende GET-Anfrage an: {WIKIJS_URL}/graphql/pages/list", "api")
- pages list endpoint with query as URL parameter
+
         # Use GET request to the pages list endpoint with query as URL parameter
-        response = requests.get(graphql/pages/list?query={encoded_query}',
-            f'{WIKIJS_URL}/graphql/pages/list?query={encoded_query}',   headers=headers
-            headers=headers        )
+        response = requests.get(
+            f'{WIKIJS_URL}/graphql/pages/list?query={encoded_query}',
+            headers=headers
         )
 
-        # Log detailed debug info        log_debug(f"Status Code: {response.status_code}", "api")
+        # Log detailed debug info
         log_debug(f"Status Code: {response.status_code}", "api")
-tus()
-        response.raise_for_status()        data = response.json()
+
+        response.raise_for_status()
         data = response.json()
 
-        if 'errors' in data:Unbekannter GraphQL-Fehler')
-            error_msg = data['errors'][0].get('message', 'Unbekannter GraphQL-Fehler')g(f"API-Fehler: {error_msg}", "error")
+        if 'errors' in data:
+            error_msg = data['errors'][0].get('message', 'Unbekannter GraphQL-Fehler')
             log_debug(f"API-Fehler: {error_msg}", "error")
             return {
-                'success': False,   'message': f"API-Fehler: {error_msg}\nBitte überprüfen Sie den API-Token."
-                'message': f"API-Fehler: {error_msg}\nBitte überprüfen Sie den API-Token."            }
+                'success': False,
+                'message': f"API-Fehler: {error_msg}\nBitte überprüfen Sie den API-Token."
             }
 
-        # Check if we got a valid response with pages datalist' in data['data']['pages']:
-        if 'data' in data und 'pages' in data['data'] und 'list' in data['data']['pages']:
+        # Check if we got a valid response with pages data
+        if 'data' in data and 'pages' in data['data'] and 'list' in data['data']['pages']:
             page_count = len(data['data']['pages']['list'])
-            log_debug(f"Verbindung erfolgreich! {page_count} Seiten gefunden.", "success")eturn {'success': True, 'message': f'Verbindung zu Wiki.js erfolgreich hergestellt! {page_count} Seiten gefunden.'}
+            log_debug(f"Verbindung erfolgreich! {page_count} Seiten gefunden.", "success")
             return {'success': True, 'message': f'Verbindung zu Wiki.js erfolgreich hergestellt! {page_count} Seiten gefunden.'}
-        else:g("Unerwartetes Antwortformat von Wiki.js", "error")
+        else:
             log_debug("Unerwartetes Antwortformat von Wiki.js", "error")
             return {
-                'success': False,   'message': 'Unerwartetes Antwortformat von Wiki.js. Bitte überprüfen Sie die API-Konfiguration.'
-                'message': 'Unerwartetes Antwortformat von Wiki.js. Bitte überprüfen Sie die API-Konfiguration.'            }
+                'success': False,
+                'message': 'Unerwartetes Antwortformat von Wiki.js. Bitte überprüfen Sie die API-Konfiguration.'
             }
 
-    except requests.exceptions.ConnectionError:g(f"Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}", "error")
+    except requests.exceptions.ConnectionError:
         log_debug(f"Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}", "error")
         return {
-            'success': False,   'message': f'Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}'
+            'success': False,
             'message': f'Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}'
         }
-    except requests.exceptions.HTTPError as e:se.status_code}: {e.response.text}", "error")
-        log_debug(f"HTTP-Fehler {e.response.status_code}: {e.response.text}", "error")e.status_code == 401:
+    except requests.exceptions.HTTPError as e:
+        log_debug(f"HTTP-Fehler {e.response.status_code}: {e.response.text}", "error")
         if e.response.status_code == 401:
             return {
-                'success': False,   'message': 'Authentifizierungsfehler: Ungültiger API-Token'
+                'success': False,
                 'message': 'Authentifizierungsfehler: Ungültiger API-Token'
-            }nse.status_code == 400:
+            }
         elif e.response.status_code == 400:
             return {
-                'success': False,   'message': 'API-Fehler: Ungültige Anfrage. Bitte überprüfen Sie die Wiki.js-URL und den API-Token'
+                'success': False,
                 'message': 'API-Fehler: Ungültige Anfrage. Bitte überprüfen Sie die Wiki.js-URL und den API-Token'
             }
         return {
-            'success': False,   'message': f'HTTP-Fehler {e.response.status_code}: {e.response.text}'
+            'success': False,
             'message': f'HTTP-Fehler {e.response.status_code}: {e.response.text}'
         }
-    except Exception as e:g(f"Unerwarteter Fehler: {str(e)}", "error")
+    except Exception as e:
         log_debug(f"Unerwarteter Fehler: {str(e)}", "error")
         return {
-            'success': False,   'message': f'Unerwarteter Fehler: {str(e)}\nBitte überprüfen Sie die Konsole für weitere Details.'
-            'message': f'Unerwarteter Fehler: {str(e)}\nBitte überprüfen Sie die Konsole für weitere Details.'        }
+            'success': False,
+            'message': f'Unerwarteter Fehler: {str(e)}\nBitte überprüfen Sie die Konsole für weitere Details.'
         }
 
-if __name__ == '__main__':    app.run(debug=True, host='0.0.0.0', port=5000)
-
-
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
