@@ -389,6 +389,7 @@
 
             <label for="file">Dateien auswählen:</label>
             <input type="file" id="file" name="files" multiple>
+            <button type="button" id="helpFormatsButton" class="small-button" style="margin-left: 8px;">Unterstützte Formate</button>
 
             <div id="fileList" class="file-info">
                 <p>Keine Dateien ausgewählt</p>
@@ -496,6 +497,9 @@
             const userSettingsSection = document.getElementById('userSettingsSection');
             const saveUserSettings = document.getElementById('saveUserSettings');
             const defaultFolder = document.getElementById('defaultFolder');
+            const helpFormatsButton = document.getElementById('helpFormatsButton');
+            const formatsModal = document.getElementById('formatsModal');
+            const closeFormatsModal = document.getElementById('closeFormatsModal');
 
             // Cookie management functions
             function setCookie(name, value, days) {
@@ -846,6 +850,23 @@
 
             // Initialize by loading saved settings
             loadSavedSettings();
+
+            // Help formats button click handler
+            helpFormatsButton.addEventListener('click', function() {
+                formatsModal.style.display = 'block';
+            });
+
+            // Close formats modal
+            closeFormatsModal.addEventListener('click', function() {
+                formatsModal.style.display = 'none';
+            });
+
+            // Close formats modal when clicking outside
+            window.addEventListener('click', function(event) {
+                if (event.target === formatsModal) {
+                    formatsModal.style.display = 'none';
+                }
+            });
 
             // Directory browser elements
             const browseFoldersBtn = document.getElementById('browseFolders');
