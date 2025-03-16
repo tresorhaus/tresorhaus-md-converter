@@ -172,6 +172,49 @@
         .small-button:hover {
             background-color: #e9ecef;
         }
+
+        /* User settings styles */
+        .user-settings {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        .user-settings h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .user-settings .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .user-settings input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .settings-toggle {
+            background-color: transparent;
+            border: none;
+            color: #3498db;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            font-size: 0.9em;
+        }
+
+        .settings-toggle:hover {
+            color: #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -182,7 +225,23 @@
         <h1>TresorHaus DocFlow</h1>
         <p>Konvertieren Sie Ihre Dokumente nach Markdown und laden Sie sie optional direkt in Ihr Wiki.js hoch.</p>
 
+        <!-- User Settings Section -->
+        <div class="user-settings" id="userSettingsSection" style="display: none;">
+            <h3>Benutzereinstellungen</h3>
+            <div class="input-group">
+                <label for="username">Benutzername:</label>
+                <input type="text" id="username" placeholder="Ihr Name">
+                <button type="button" id="saveUserSettings" class="small-button">Speichern</button>
+            </div>
+        </div>
+        <div style="text-align: right; margin-bottom: 15px;">
+            <button type="button" id="toggleSettings" class="settings-toggle">Benutzereinstellungen</button>
+        </div>
+
         <form action="/" method="post" enctype="multipart/form-data" id="uploadForm">
+            <!-- Hidden username field that will be populated via JS -->
+            <input type="hidden" id="userNameHidden" name="username" value="">
+
             <label for="file">Dateien auswählen:</label>
             <input type="file" id="file" name="files" multiple>
 
@@ -198,6 +257,15 @@
             <div id="wikiOptions" class="wiki-options hidden">
                 <h3>Wiki.js Einstellungen</h3>
                 <p>Definieren Sie für jede Datei, wo sie in Wiki.js hochgeladen werden soll.</p>
+                <div id="defaultFolderSection">
+                    <label for="defaultFolder">Standard-Ordner:</label>
+                    <div class="input-group" style="margin-top: 5px;">
+                        <input type="text" id="defaultFolder" name="default_folder" placeholder="z.B. Dokumentation/Benutzer" style="flex-grow: 1;">
+                        <div class="info-text" style="width: 100%; margin-top: 5px;">
+                            Falls kein Pfad angegeben wird, werden Dateien im Format "[Standard-Ordner]/[Benutzername]/[Datum]/[Dateiname]" gespeichert.
+                        </div>
+                    </div>
+                </div>
                 <div id="wikiFileSettings"></div>
             </div>
 
@@ -223,6 +291,104 @@
             const wikiOptions = document.getElementById('wikiOptions');
             const wikiFileSettings = document.getElementById('wikiFileSettings');
             const testWikiButton = document.getElementById('testWikiButton');
+            const usernameInput = document.getElementById('username');
+            const usernameHidden = document.getElementById('userNameHidden');
+            const toggleSettings = document.getElementById('toggleSettings');
+            const userSettingsSection = document.getElementById('userSettingsSection');
+            const saveUserSettings = document.getElementById('saveUserSettings');
+            const defaultFolder = document.getElementById('defaultFolder');
+
+            // Cookie management functions
+            function setCookie(name, value, days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                const expires = "; expires=" + date.toUTCString();
+                document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/; SameSite=Lax";
+            }
+
+            function getCookie(name) {
+                const nameEQ = name + "=";
+                const ca = document.cookie.split(';');
+                for(let i = 0; i < ca.length; i++) {
+                    let c = ca[i];
+                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                    if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+                }
+                return null;
+            }
+
+            // Load saved settings
+            function loadSavedSettings() {
+                const savedUsername = getCookie('docflow_username');
+                if (savedUsername) {
+                    usernameInput.value = savedUsername;
+                    usernameHidden.value = savedUsername;
+                    updateUserDisplay(savedUsername);
+                }
+
+                const savedDefaultFolder = getCookie('docflow_default_folder');
+                if (savedDefaultFolder && defaultFolder) {
+                    defaultFolder.value = savedDefaultFolder;
+                }
+            }
+
+            // Update any UI elements that show the username
+            function updateUserDisplay(username) {
+                // Update the hidden field
+                usernameHidden.value = username;
+
+                // You could add more UI elements showing the current user here
+                // For example, adding the username to the header or footer
+
+                // Update the placeholder in the default folder input if it exists
+                if (defaultFolder) {
+                    defaultFolder.placeholder = `z.B. Dokumentation/${username || 'Benutzer'}`;
+                }
+            }
+
+            // Settings toggle
+            toggleSettings.addEventListener('click', function() {
+                if (userSettingsSection.style.display === 'none') {
+                    userSettingsSection.style.display = 'block';
+                    toggleSettings.textContent = 'Benutzereinstellungen ausblenden';
+                } else {
+                    userSettingsSection.style.display = 'none';
+                    toggleSettings.textContent = 'Benutzereinstellungen';
+                }
+            });
+
+            // Save user settings
+            saveUserSettings.addEventListener('click', function() {
+                const username = usernameInput.value.trim();
+                if (username) {
+                    setCookie('docflow_username', username, 365); // Save for 1 year
+                    updateUserDisplay(username);
+                    userSettingsSection.style.display = 'none';
+                    toggleSettings.textContent = 'Benutzereinstellungen';
+
+                    // If default folder exists, save it too
+                    if (defaultFolder) {
+                        const folderPath = defaultFolder.value.trim();
+                        if (folderPath) {
+                            setCookie('docflow_default_folder', folderPath, 365);
+                        }
+                    }
+
+                    alert(`Benutzereinstellungen für "${username}" wurden gespeichert.`);
+                } else {
+                    alert('Bitte geben Sie einen Benutzernamen ein.');
+                }
+            });
+
+            // Handle default folder changes
+            if (defaultFolder) {
+                defaultFolder.addEventListener('change', function() {
+                    const folderPath = defaultFolder.value.trim();
+                    if (folderPath) {
+                        setCookie('docflow_default_folder', folderPath, 365);
+                    }
+                });
+            }
 
             // Regulärer Ausdruck für gültige Wiki.js-Pfade
             const validPathRegex = /^[a-zA-Z0-9\-_\/]+$/;
@@ -343,7 +509,7 @@
                             <div>
                                 <label for="wiki_path_${i}">Wiki.js Pfad:</label>
                                 <input type="text" id="wiki_path_${i}" name="wiki_path_${i}"
-                                       placeholder="z.B. Dokumentation/Projekte">
+                                       placeholder="z.B. ${defaultFolder ? defaultFolder.value : 'Dokumentation'}/${usernameHidden.value || 'Benutzer'}/${new Date().toISOString().split('T')[0]}">
                                 <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
                             </div>
                         `;
@@ -370,6 +536,16 @@
 
             // Validate all wiki settings before form submission
             document.getElementById('uploadForm').addEventListener('submit', function(event) {
+                // Check if username is set
+                const username = usernameHidden.value.trim();
+                if (!username) {
+                    event.preventDefault();
+                    alert('Bitte geben Sie einen Benutzernamen in den Einstellungen ein.');
+                    userSettingsSection.style.display = 'block';
+                    toggleSettings.textContent = 'Benutzereinstellungen ausblenden';
+                    return;
+                }
+
                 if (wikiUpload.checked) {
                     let hasErrors = false;
 
@@ -409,11 +585,8 @@
                 });
             });
 
-            // Add this where you display the titles
-            function updateDisplayTitle(element) {
-                const originalTitle = element.textContent;
-                element.textContent = normalizePath(originalTitle);
-            }
+            // Initialize by loading saved settings
+            loadSavedSettings();
         });
     </script>
 </body>

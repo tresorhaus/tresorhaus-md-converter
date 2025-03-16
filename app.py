@@ -167,13 +167,14 @@ def sanitize_wikijs_title(title):
 
     return sanitized
 
-def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=None):
+def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=None, username=None, default_folder=None):
     """Lädt eine Markdown-Datei in Wiki.js hoch"""
     if not WIKIJS_URL or not WIKIJS_TOKEN:
         log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
         return False, None
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    date_only = datetime.now().strftime("%Y-%m-%d")
 
     # Entferne .md Erweiterung aus dem Titel wenn vorhanden
     title_without_extension = title
@@ -197,9 +198,12 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
         if original_path != path:
             log_debug(f"Pfad wurde sanitiert: '{original_path}' → '{path}'", "info")
     else:
-        # Sanitiere auch den Standard-Pfad
-        default_path = f"DocFlow/{session_id}_{timestamp}/{title_without_extension}"
+        # Erstelle einen Standard-Pfad mit Benutzernamen und Datum
+        safe_username = sanitize_wikijs_path(username) if username else "anonymous"
+        base_folder = sanitize_wikijs_path(default_folder) if default_folder else "DocFlow"
+        default_path = f"{base_folder}/{safe_username}/{date_only}/{title_without_extension}"
         path = sanitize_wikijs_path(default_path)
+        log_debug(f"Kein Pfad angegeben. Verwende Standard-Pfad: {path}", "info")
 
     log_debug(f"Starte Upload zu Wiki.js: {title_without_extension}", "api")
     log_debug(f"Ziel-Pfad: {path}", "api")
@@ -341,7 +345,7 @@ def convert_to_markdown(input_path, output_path):
         print(f"Fehler bei der Konvertierung von {input_path}: {e}")
         return False
 
-def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wiki_titles=None):
+def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wiki_titles=None, username=None, default_folder=None):
     """Verarbeitet hochgeladene Dateien und konvertiert sie zu Markdown"""
     global debug_logs
     debug_logs = []  # Zurücksetzen der Debug-Logs für jede neue Sitzung
@@ -350,6 +354,7 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
     result_dir = os.path.join(RESULT_FOLDER, session_id)
 
     log_debug(f"Neue Upload-Verarbeitung gestartet. Session ID: {session_id}")
+    log_debug(f"Benutzer: {username or 'Nicht angegeben'}")
     log_debug(f"Wiki.js-Upload aktiviert: {'Ja' if upload_to_wiki else 'Nein'}")
 
     # Sicherstellen, dass wiki_paths und wiki_titles Dictionaries sind
@@ -427,7 +432,9 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
                                 output_filename,
                                 session_id,
                                 custom_path=custom_path,
-                                custom_title=custom_title
+                                custom_title=custom_title,
+                                username=username,
+                                default_folder=default_folder
                             )
 
                             if success:
@@ -490,6 +497,10 @@ def index():
 
         session_id = str(uuid.uuid4())
 
+        # Get username and default folder
+        username = request.form.get('username', '')
+        default_folder = request.form.get('default_folder', '')
+
         # Sammle benutzerdefinierte Wiki.js Pfade und Titel
         wiki_paths = {}
         wiki_titles = {}
@@ -507,7 +518,9 @@ def index():
             session_id,
             upload_to_wiki,
             wiki_paths=wiki_paths,
-            wiki_titles=wiki_titles
+            wiki_titles=wiki_titles,
+            username=username,
+            default_folder=default_folder
         )
 
         if not converted_files and not failed_files:
