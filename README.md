@@ -1,7 +1,7 @@
 # TresorHaus DocFlow
 
 <p align="center">
-  <img src="static/tresorhaus-logo.png" alt="TresorHaus Logo" width="300"/>
+  <img src="static/logo-tesorhaus.svg" alt="TresorHaus Logo" width="300"/>
 </p>
 
 TresorHaus DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentformate automatisch in Markdown umwandelt. Die Anwendung wurde speziell entwickelt, um die Dokumentenverwaltung zu optimieren und den Workflow zwischen verschiedenen Systemen zu vereinfachen.
@@ -136,7 +136,7 @@ tresorhaus-docflow/
 │   └── results.html       # Ergebnisseite
 ├── static/                # Statische Dateien
 │   ├── styles.css         # CSS-Stile
-│   └── tresorhaus-logo.png # Logo
+│   └── logo-tesorhaus.svg # Logo
 ├── README.md              # Dokumentation
 └── LICENSE                # Lizenzinformationen
 ```

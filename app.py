@@ -783,7 +783,7 @@ def ensure_static_files_exist():
         print(f"Static directory created: {static_dir}")
 
     # Check if logo exists, if not create a placeholder
-    logo_path = os.path.join(static_dir, 'tresorhaus-logo.png')
+    logo_path = os.path.join(static_dir, 'logo-tesorhaus.svg')
     if not os.path.exists(logo_path):
         print(f"Warning: Logo file not found at {logo_path}. Please add a logo file.")
 
