@@ -101,6 +101,24 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+        .input-help {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        .input-warning {
+            font-size: 12px;
+            color: #856404;
+            background-color: #fff3cd;
+            border-radius: 4px;
+            padding: 5px;
+            margin-top: 5px;
+            display: none;
+        }
+        .invalid-input {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
     </style>
 </head>
 <body>
@@ -145,6 +163,46 @@
             const wikiOptions = document.getElementById('wikiOptions');
             const wikiFileSettings = document.getElementById('wikiFileSettings');
             const testWikiButton = document.getElementById('testWikiButton');
+
+            // Regulärer Ausdruck für gültige Wiki.js-Pfade und Titel
+            const validPathRegex = /^[a-zA-Z0-9\-_\/]+$/;
+            const validTitleRegex = /^[a-zA-Z0-9 \-_]+$/;
+
+            // Function to validate and show warnings for Wiki.js inputs
+            function validateWikiInput(input, isPath) {
+                const value = input.value.trim();
+                const warningId = `warning-${input.id}`;
+                let warning = document.getElementById(warningId);
+
+                if (!warning) {
+                    warning = document.createElement('div');
+                    warning.id = warningId;
+                    warning.className = 'input-warning';
+                    input.insertAdjacentElement('afterend', warning);
+                }
+
+                if (isPath) {
+                    // Validate path (no spaces, no special chars)
+                    if (value && !validPathRegex.test(value)) {
+                        input.classList.add('invalid-input');
+                        warning.textContent = 'Ungültige Zeichen! Nur Buchstaben, Zahlen, Bindestriche, Unterstriche und Schrägstriche sind erlaubt.';
+                        warning.style.display = 'block';
+                        return false;
+                    }
+                } else {
+                    // Validate title (no special chars)
+                    if (value && !validTitleRegex.test(value)) {
+                        input.classList.add('invalid-input');
+                        warning.textContent = 'Ungültige Zeichen! Nur Buchstaben, Zahlen, Leerzeichen, Bindestriche und Unterstriche sind erlaubt.';
+                        warning.style.display = 'block';
+                        return false;
+                    }
+                }
+
+                input.classList.remove('invalid-input');
+                warning.style.display = 'none';
+                return true;
+            }
 
             // File input change handler
             fileInput.addEventListener('change', function() {
@@ -199,18 +257,55 @@
                                 <label for="wiki_title_${i}">Wiki.js Seitentitel:</label>
                                 <input type="text" id="wiki_title_${i}" name="wiki_title_${i}"
                                        value="${fileNameWithoutExt}" placeholder="Titel der Wiki-Seite">
+                                <div class="input-help">Erlaubt: Buchstaben, Zahlen, Leerzeichen, Bindestriche, Unterstriche</div>
                             </div>
                             <div>
                                 <label for="wiki_path_${i}">Wiki.js Pfad:</label>
                                 <input type="text" id="wiki_path_${i}" name="wiki_path_${i}"
                                        placeholder="z.B. Dokumentation/Projekte">
+                                <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
                             </div>
                         `;
 
                         wikiFileSettings.appendChild(fileDetail);
+
+                        // Add event listeners to the newly created inputs
+                        document.getElementById(`wiki_title_${i}`).addEventListener('input', function() {
+                            validateWikiInput(this, false);
+                        });
+
+                        document.getElementById(`wiki_path_${i}`).addEventListener('input', function() {
+                            validateWikiInput(this, true);
+                        });
                     }
                 }
             }
+
+            // Validate all wiki settings before form submission
+            document.getElementById('uploadForm').addEventListener('submit', function(event) {
+                if (wikiUpload.checked) {
+                    let hasErrors = false;
+
+                    // Check all title and path inputs
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        const titleInput = document.getElementById(`wiki_title_${i}`);
+                        const pathInput = document.getElementById(`wiki_path_${i}`);
+
+                        if (titleInput && !validateWikiInput(titleInput, false)) {
+                            hasErrors = true;
+                        }
+
+                        if (pathInput && !validateWikiInput(pathInput, true)) {
+                            hasErrors = true;
+                        }
+                    }
+
+                    if (hasErrors) {
+                        event.preventDefault();
+                        alert('Bitte korrigieren Sie die markierten Fehler bei den Wiki.js-Einstellungen.');
+                    }
+                }
+            });
 
             // Test Wiki.js connection button
             testWikiButton.addEventListener('click', function() {

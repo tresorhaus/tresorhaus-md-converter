@@ -20,6 +20,7 @@ import io
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
+import re
 
 # Lade Umgebungsvariablen
 load_dotenv()
@@ -106,6 +107,54 @@ def log_debug(message, log_type='info'):
     })
     print(f"[{timestamp}] {log_type.upper()}: {message}")
 
+def sanitize_wikijs_path(path):
+    """
+    Sanitiert einen Wiki.js-Pfad, indem unerlaubte Zeichen entfernt oder ersetzt werden.
+    - Leerzeichen werden durch Bindestriche ersetzt
+    - Punkte werden entfernt (außer als Dateierweiterungen)
+    - Unsichere URL-Zeichen werden entfernt
+    """
+    if not path:
+        return ""
+
+    # Leerzeichen durch Bindestriche ersetzen
+    path = path.replace(" ", "-")
+
+    # Teilen Sie den Pfad in Segmente auf
+    segments = path.split('/')
+    sanitized_segments = []
+
+    for segment in segments:
+        if segment:
+            # Entferne oder ersetze unerlaubte Zeichen im Segment
+            # Erlaubt: Alphanumerische Zeichen, Bindestriche, Unterstriche
+            # Entferne unsichere URL-Zeichen wie Satzzeichen, Anführungszeichen usw.
+            sanitized = re.sub(r'[^a-zA-Z0-9-_]', '', segment)
+            if sanitized:  # Nur hinzufügen, wenn nach der Bereinigung noch etwas übrig ist
+                sanitized_segments.append(sanitized)
+
+    # Pfad aus bereinigten Segmenten erstellen
+    return '/'.join(sanitized_segments)
+
+def sanitize_wikijs_title(title):
+    """
+    Sanitiert einen Wiki.js-Seitentitel, indem unerlaubte Zeichen entfernt oder ersetzt werden.
+    - Leerzeichen werden beibehalten (erlaubt in Titeln)
+    - Punkte werden entfernt (außer als Dateierweiterungen)
+    - Unsichere URL-Zeichen werden ersetzt oder entfernt
+    """
+    if not title:
+        return ""
+
+    # Ersetze unsichere Zeichen, behalte aber Leerzeichen bei
+    # Erlaubt: Alphanumerische Zeichen, Leerzeichen, Bindestriche, Unterstriche
+    sanitized = re.sub(r'[^a-zA-Z0-9 \-_]', '', title)
+
+    # Entferne führende und nachfolgende Leerzeichen
+    sanitized = sanitized.strip()
+
+    return sanitized
+
 def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=None):
     """Lädt eine Markdown-Datei in Wiki.js hoch"""
     if not WIKIJS_URL or not WIKIJS_TOKEN:
@@ -119,17 +168,26 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
     if title.lower().endswith('.md'):
         title_without_extension = title[:-3]
 
-    # Verwende den benutzerdefinierten Titel, wenn angegeben
+    # Verwende den benutzerdefinierten Titel, wenn angegeben, und sanitiere ihn
     if custom_title and custom_title.strip():
-        title_without_extension = custom_title.strip()
+        original_title = custom_title.strip()
+        title_without_extension = sanitize_wikijs_title(original_title)
+        if original_title != title_without_extension:
+            log_debug(f"Titel wurde sanitiert: '{original_title}' → '{title_without_extension}'", "info")
+    else:
+        title_without_extension = sanitize_wikijs_title(title_without_extension)
 
-    # Verwende den benutzerdefinierten Pfad, wenn angegeben, sonst den Standard-Pfad
+    # Verwende den benutzerdefinierten Pfad, wenn angegeben, sonst den Standard-Pfad, und sanitiere ihn
     if custom_path and custom_path.strip():
         # Entferne führende und folgende Schrägstriche für Konsistenz
-        cleaned_path = custom_path.strip().strip('/')
-        path = cleaned_path
+        original_path = custom_path.strip().strip('/')
+        path = sanitize_wikijs_path(original_path)
+        if original_path != path:
+            log_debug(f"Pfad wurde sanitiert: '{original_path}' → '{path}'", "info")
     else:
-        path = f"DocFlow/{session_id}_{timestamp}/{title_without_extension}"
+        # Sanitiere auch den Standard-Pfad
+        default_path = f"DocFlow/{session_id}_{timestamp}/{title_without_extension}"
+        path = sanitize_wikijs_path(default_path)
 
     log_debug(f"Starte Upload zu Wiki.js: {title_without_extension}", "api")
     log_debug(f"Ziel-Pfad: {path}", "api")
@@ -329,6 +387,13 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
                             # Hole benutzerdefinierte Pfad und Titel für diese Datei
                             custom_path = wiki_paths.get(f"path_{i}", "")
                             custom_title = wiki_titles.get(f"title_{i}", "")
+
+                            # Überprüfe, ob der Pfad oder Titel ungültige Zeichen enthält, bevor sie sanitiert werden
+                            if custom_path and not sanitize_wikijs_path(custom_path) == custom_path:
+                                log_debug(f"Warnung: Benutzerdefinierter Pfad '{custom_path}' enthält ungültige Zeichen und wird sanitiert.", "warning")
+
+                            if custom_title and not sanitize_wikijs_title(custom_title) == custom_title:
+                                log_debug(f"Warnung: Benutzerdefinierter Titel '{custom_title}' enthält ungültige Zeichen und wird sanitiert.", "warning")
 
                             log_debug(f"Benutzerdefinierter Pfad: {custom_path}", "info")
                             log_debug(f"Benutzerdefinierter Titel: {custom_title}", "info")
