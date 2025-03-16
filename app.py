@@ -38,6 +38,7 @@ ALLOWED_EXTENSIONS = {
 
 # Wiki.js Konfiguration
 WIKIJS_URL = os.getenv('WIKIJS_URL')
+WIKIJS_EXTERNAL_URL = os.getenv('WIKIJS_EXTERNAL_URL')
 WIKIJS_TOKEN = os.getenv('WIKIJS_TOKEN')
 
 # Format-Mapping für Pandoc
@@ -222,8 +223,8 @@ def upload_to_wikijs(content, title, session_id):
             page_id = page.get('id')
             actual_path = page.get('path')
 
-            # Konstruiere die vollständige Wiki.js URL zur Seite
-            wiki_url = f"{WIKIJS_URL}/{actual_path}"
+            # Konstruiere die vollständige Wiki.js URL zur Seite mit der externen URL statt der API-URL
+            wiki_url = f"{WIKIJS_EXTERNAL_URL}/{actual_path}"
             log_debug(f"Wiki.js Seite erfolgreich erstellt: {wiki_url} (ID: {page_id})", "success")
             return True, wiki_url
         else:
