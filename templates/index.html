@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TresorHaus DocFlow - Dokumentenkonverter</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -124,7 +124,7 @@
 <body>
     <div class="container">
         <div class="logo">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="TresorHaus Logo">
+            <img src="{{ url_for('static', filename='tresorhaus-logo.png') }}" alt="TresorHaus Logo">
         </div>
         <h1>TresorHaus DocFlow</h1>
         <p>Konvertieren Sie Ihre Dokumente nach Markdown und laden Sie sie optional direkt in Ihr Wiki.js hoch.</p>
@@ -170,15 +170,32 @@
 
             // Funktion zum Sanitieren von Wiki.js Seitentiteln
             function sanitizeWikiTitle(title) {
-                // Entferne alle unerlaubten Zeichen außer Buchstaben, Zahlen, Leerzeichen, Bindestrichen und Unterstrichen
-                return title.replace(/[^a-zA-Z0-9 \-_]/g, '').trim();
+                if (!title) return '';
+
+                // First, normalize special characters to their ASCII equivalents
+                const normalizedTitle = title
+                    .replace(/[äÄ]/g, 'ae')
+                    .replace(/[öÖ]/g, 'oe')
+                    .replace(/[üÜ]/g, 'ue')
+                    .replace(/[ß]/g, 'ss');
+
+                // Then remove all remaining disallowed characters
+                return normalizedTitle.replace(/[^a-zA-Z0-9 \-_]/g, '').trim();
             }
 
             // Funktion zum Sanitieren von Wiki.js Pfaden
             function sanitizeWikiPath(path) {
-                // Entferne alle unerlaubten Zeichen außer Buchstaben, Zahlen, Bindestrichen, Unterstrichen und Schrägstrichen
-                // Ersetze Leerzeichen durch Bindestriche
-                return path.replace(/ /g, '-').replace(/[^a-zA-Z0-9\-_\/]/g, '').trim();
+                if (!path) return '';
+
+                // First, normalize special characters
+                const normalizedPath = path
+                    .replace(/[äÄ]/g, 'ae')
+                    .replace(/[öÖ]/g, 'oe')
+                    .replace(/[üÜ]/g, 'ue')
+                    .replace(/[ß]/g, 'ss');
+
+                // Replace spaces with dashes and remove disallowed characters
+                return normalizedPath.replace(/ /g, '-').replace(/[^a-zA-Z0-9\-_\/]/g, '').trim();
             }
 
             // Function to validate and show warnings for Wiki.js inputs
@@ -259,12 +276,11 @@
                         const file = fileInput.files[i];
                         const fileName = file.name;
 
-                        // Erhalte den Dateinamen ohne Erweiterung und sanitiere ihn sofort
+                        // Store the original filename without extension
                         const fileNameWithoutExt = fileName.split('.').slice(0, -1).join('.');
-                        const sanitizedTitle = sanitizeWikiTitle(fileNameWithoutExt);
 
-                        // Speichere den ursprünglichen Dateinamen für Vergleichszwecke
-                        const originalTitle = fileNameWithoutExt;
+                        // Sanitize the title correctly
+                        const sanitizedTitle = sanitizeWikiTitle(fileNameWithoutExt);
 
                         const fileDetail = document.createElement('div');
                         fileDetail.className = 'file-detail';
@@ -288,34 +304,62 @@
 
                         wikiFileSettings.appendChild(fileDetail);
 
-                        // Zeige immer eine Benachrichtigung an, wenn der Titel sanitiert wurde
-                        if (sanitizedTitle !== originalTitle) {
+                        // Show notification if title was sanitized
+                        if (sanitizedTitle !== fileNameWithoutExt) {
                             const titleInput = document.getElementById(`wiki_title_${i}`);
                             const notificationDiv = document.createElement('div');
                             notificationDiv.className = 'input-help';
                             notificationDiv.style.color = '#856404';
-                            notificationDiv.textContent = `Der Titel wurde automatisch bereinigt von "${originalTitle}" zu "${sanitizedTitle}"`;
+                            notificationDiv.innerHTML = `Der Titel wurde automatisch bereinigt von "<b>${fileNameWithoutExt}</b>" zu "<b>${sanitizedTitle}</b>"`;
                             titleInput.insertAdjacentElement('afterend', notificationDiv);
                         }
 
                         // Add event listeners for real-time sanitization
                         const titleInput = document.getElementById(`wiki_title_${i}`);
                         titleInput.addEventListener('input', function() {
+                            // Store original value for comparison
+                            const originalValue = this.value;
                             // Auto-sanitize title on input and update the field
-                            const sanitizedValue = sanitizeWikiTitle(this.value);
-                            if (sanitizedValue !== this.value) {
+                            const sanitizedValue = sanitizeWikiTitle(originalValue);
+
+                            // Only update if there's a difference to avoid moving cursor position unnecessarily
+                            if (sanitizedValue !== originalValue) {
                                 this.value = sanitizedValue;
+
+                                // Show a temporary notification about the auto-sanitization
+                                const infoId = `sanitize-info-${this.id}`;
+                                let infoEl = document.getElementById(infoId);
+
+                                if (!infoEl) {
+                                    infoEl = document.createElement('div');
+                                    infoEl.id = infoId;
+                                    infoEl.className = 'input-help';
+                                    infoEl.style.color = '#856404';
+                                    this.insertAdjacentElement('afterend', infoEl);
+                                }
+
+                                infoEl.textContent = 'Zeichen automatisch bereinigt';
+
+                                // Clear the message after 2 seconds
+                                setTimeout(() => {
+                                    infoEl.textContent = '';
+                                }, 2000);
                             }
+
                             validateWikiInput(this, false);
                         });
 
                         const pathInput = document.getElementById(`wiki_path_${i}`);
                         pathInput.addEventListener('input', function() {
+                            // Store original value for comparison
+                            const originalValue = this.value;
                             // Auto-sanitize path on input
-                            const sanitizedValue = sanitizeWikiPath(this.value);
-                            if (sanitizedValue !== this.value) {
+                            const sanitizedValue = sanitizeWikiPath(originalValue);
+
+                            if (sanitizedValue !== originalValue) {
                                 this.value = sanitizedValue;
                             }
+
                             validateWikiInput(this, true);
                         });
                     }

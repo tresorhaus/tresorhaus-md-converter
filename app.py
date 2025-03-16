@@ -81,8 +81,8 @@ def load_template(filename):
 def favicon():
     return send_from_directory(
         os.path.join(app.root_path, 'static'),
-        'favicon.png',
-        mimetype='image/png'
+        'favicon.ico',
+        mimetype='image/x-icon'
     )
 
 def allowed_file(filename):
@@ -111,11 +111,17 @@ def sanitize_wikijs_path(path):
     """
     Sanitiert einen Wiki.js-Pfad, indem unerlaubte Zeichen entfernt oder ersetzt werden.
     - Leerzeichen werden durch Bindestriche ersetzt
+    - Deutsche Umlaute werden transliteriert (ä → ae, ö → oe, ü → ue, ß → ss)
     - Punkte werden entfernt (außer als Dateierweiterungen)
     - Unsichere URL-Zeichen werden entfernt
     """
     if not path:
         return ""
+
+    # Transliterate German special characters
+    for old, new in [('ä', 'ae'), ('ö', 'oe'), ('ü', 'ue'), ('ß', 'ss'),
+                      ('Ä', 'Ae'), ('Ö', 'Oe'), ('Ü', 'Ue')]:
+        path = path.replace(old, new)
 
     # Leerzeichen durch Bindestriche ersetzen
     path = path.replace(" ", "-")
@@ -140,11 +146,17 @@ def sanitize_wikijs_title(title):
     """
     Sanitiert einen Wiki.js-Seitentitel, indem unerlaubte Zeichen entfernt oder ersetzt werden.
     - Leerzeichen werden beibehalten (erlaubt in Titeln)
+    - Deutsche Umlaute werden transliteriert (ä → ae, ö → oe, ü → ue, ß → ss)
     - Punkte werden entfernt (außer als Dateierweiterungen)
     - Unsichere URL-Zeichen werden ersetzt oder entfernt
     """
     if not title:
         return ""
+
+    # Transliterate German special characters
+    for old, new in [('ä', 'ae'), ('ö', 'oe'), ('ü', 'ue'), ('ß', 'ss'),
+                      ('Ä', 'Ae'), ('Ö', 'Oe'), ('Ü', 'Ue')]:
+        title = title.replace(old, new)
 
     # Ersetze unsichere Zeichen, behalte aber Leerzeichen bei
     # Erlaubt: Alphanumerische Zeichen, Leerzeichen, Bindestriche, Unterstriche
@@ -626,11 +638,31 @@ def test_wikijs_connection():
             'message': f'Unerwarteter Fehler: {str(e)}\nBitte überprüfen Sie die Konsole für weitere Details.'
         }
 
+# Ensure static directory and essential files exist
+def ensure_static_files_exist():
+    static_dir = os.path.join(app.root_path, 'static')
+    if not os.path.exists(static_dir):
+        os.makedirs(static_dir)
+        print(f"Static directory created: {static_dir}")
+
+    # Check if logo exists, if not create a placeholder
+    logo_path = os.path.join(static_dir, 'tresorhaus-logo.png')
+    if not os.path.exists(logo_path):
+        print(f"Warning: Logo file not found at {logo_path}. Please add a logo file.")
+
+    # Check if favicon exists, if not create a placeholder
+    favicon_path = os.path.join(static_dir, 'favicon.ico')
+    if not os.path.exists(favicon_path):
+        print(f"Warning: Favicon file not found at {favicon_path}. Please add a favicon file.")
+
 if __name__ == '__main__':
     # Stelle sicher, dass das Templates-Verzeichnis existiert
     templates_dir = os.path.join(app.root_path, 'templates')
     if not os.path.exists(templates_dir):
         os.makedirs(templates_dir)
         print(f"Templates-Verzeichnis erstellt: {templates_dir}")
+
+    # Ensure static files exist
+    ensure_static_files_exist()
 
     app.run(debug=True, host='0.0.0.0', port=5000)
