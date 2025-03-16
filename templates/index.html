@@ -258,10 +258,13 @@
                     for (let i = 0; i < fileInput.files.length; i++) {
                         const file = fileInput.files[i];
                         const fileName = file.name;
-                        // Erhalte den Dateinamen ohne Erweiterung
+
+                        // Erhalte den Dateinamen ohne Erweiterung und sanitiere ihn sofort
                         const fileNameWithoutExt = fileName.split('.').slice(0, -1).join('.');
-                        // Sanitiere den Titel automatisch
                         const sanitizedTitle = sanitizeWikiTitle(fileNameWithoutExt);
+
+                        // Speichere den ursprünglichen Dateinamen für Vergleichszwecke
+                        const originalTitle = fileNameWithoutExt;
 
                         const fileDetail = document.createElement('div');
                         fileDetail.className = 'file-detail';
@@ -285,29 +288,35 @@
 
                         wikiFileSettings.appendChild(fileDetail);
 
-                        // Zeige an, wenn der Titel sanitiert wurde (falls er sich vom ursprünglichen Dateinamen unterscheidet)
-                        if (sanitizedTitle !== fileNameWithoutExt) {
+                        // Zeige immer eine Benachrichtigung an, wenn der Titel sanitiert wurde
+                        if (sanitizedTitle !== originalTitle) {
                             const titleInput = document.getElementById(`wiki_title_${i}`);
                             const notificationDiv = document.createElement('div');
                             notificationDiv.className = 'input-help';
                             notificationDiv.style.color = '#856404';
-                            notificationDiv.textContent = 'Der Titel wurde automatisch bereinigt, um Wiki.js-Anforderungen zu entsprechen.';
+                            notificationDiv.textContent = `Der Titel wurde automatisch bereinigt von "${originalTitle}" zu "${sanitizedTitle}"`;
                             titleInput.insertAdjacentElement('afterend', notificationDiv);
                         }
 
-                        // Add event listeners to the newly created inputs
-                        document.getElementById(`wiki_title_${i}`).addEventListener('input', function() {
+                        // Add event listeners for real-time sanitization
+                        const titleInput = document.getElementById(`wiki_title_${i}`);
+                        titleInput.addEventListener('input', function() {
+                            // Auto-sanitize title on input and update the field
+                            const sanitizedValue = sanitizeWikiTitle(this.value);
+                            if (sanitizedValue !== this.value) {
+                                this.value = sanitizedValue;
+                            }
                             validateWikiInput(this, false);
                         });
 
-                        document.getElementById(`wiki_path_${i}`).addEventListener('input', function() {
-                            validateWikiInput(this, true);
-
+                        const pathInput = document.getElementById(`wiki_path_${i}`);
+                        pathInput.addEventListener('input', function() {
                             // Auto-sanitize path on input
                             const sanitizedValue = sanitizeWikiPath(this.value);
                             if (sanitizedValue !== this.value) {
                                 this.value = sanitizedValue;
                             }
+                            validateWikiInput(this, true);
                         });
                     }
                 }
