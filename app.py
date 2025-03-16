@@ -525,6 +525,7 @@ def upload_to_wikijs(content, title, session_id):
     }
 
     try:
+        # For mutations, we need to use POST with json payload
         response = requests.post(
             f'{WIKIJS_URL}/graphql',
             headers=headers,
@@ -692,30 +693,23 @@ def test_wikijs_connection():
     if not WIKIJS_URL or not WIKIJS_TOKEN:
         return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert'}
 
-    # Test connection in steps for better diagnosis
+    # Test connection using pages list query
     try:
-        # 1. Test basic connection
-        base_response = requests.get(WIKIJS_URL)
-        base_response.raise_for_status()
+        # Use a simple query to list pages
+        test_query = "{pages{list{id,title,path,contentType}}}"
 
-        # 2. Test GraphQL endpoint with minimal query
-        test_query = """
-        query {
-            authentication {
-                login
-            }
-        }
-        """
+        # URL encode the query parameter
+        import urllib.parse
+        encoded_query = urllib.parse.quote(test_query)
 
         headers = {
-            'Authorization': f'Bearer {WIKIJS_TOKEN}',
-            'Content-Type': 'application/json'
+            'Authorization': f'Bearer {WIKIJS_TOKEN}'
         }
 
-        response = requests.post(
-            f'{WIKIJS_URL}/graphql',
-            headers=headers,
-            json={'query': test_query}
+        # Use GET request to the pages list endpoint with query as URL parameter
+        response = requests.get(
+            f'{WIKIJS_URL}/graphql/pages/list?query={encoded_query}',
+            headers=headers
         )
 
         # Print detailed debug info
@@ -733,7 +727,14 @@ def test_wikijs_connection():
                 'message': f"API-Fehler: {error_msg}\nBitte überprüfen Sie den API-Token."
             }
 
-        return {'success': True, 'message': 'Verbindung zu Wiki.js erfolgreich hergestellt!'}
+        # Check if we got a valid response with pages data
+        if 'data' in data and 'pages' in data['data'] and 'list' in data['data']['pages']:
+            return {'success': True, 'message': 'Verbindung zu Wiki.js erfolgreich hergestellt!'}
+        else:
+            return {
+                'success': False,
+                'message': 'Unerwartetes Antwortformat von Wiki.js. Bitte überprüfen Sie die API-Konfiguration.'
+            }
 
     except requests.exceptions.ConnectionError:
         return {
