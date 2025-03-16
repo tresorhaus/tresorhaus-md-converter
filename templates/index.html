@@ -355,341 +355,292 @@
         li {
             margin-bottom: 3px;
         }
-
-        /* Format modal styles */
-        .formats-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin: 15px 0;
-        }
-
-        .format-group {
-            flex: 1 1 40%;
-            min-width: 200px;
-        }
-
-        .format-group h4 {
-            margin: 0 0 8px 0;
-            color: #2c3e50;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 4px;
-        }
-
-        .format-group ul {
-            margin: 0;
-            padding-left: 18px;
-        }
-
-        .format-info {
-            background-color: #f8f9fa;
-            border-left: 4px solid #3498db;
-            padding: 8px 12px;
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #555;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo">
-            <img src="{{ url_for('static', filename='tresorhaus-logo.png') }}" alt="TresorHaus Logo">            <div class="checkbox-container">
-        </div>ikiUpload" name="upload_to_wiki" style="display: inline-block; margin-right: 5px;">
+            <img src="{{ url_for('static', filename='tresorhaus-logo.png') }}" alt="TresorHaus Logo">
+        </div>
         <h1>TresorHaus DocFlow</h1>
         <p>Konvertieren Sie Ihre Dokumente nach Markdown und laden Sie sie optional direkt in Ihr Wiki.js hoch.</p>
 
-        <!-- User Greeting -->            <div id="wikiOptions" class="wiki-options hidden">
+        <!-- User Greeting -->
         <div class="user-greeting" id="userGreeting" style="display: none;">
-            <strong>Willkommen zurück, <span id="greetingUsername"></span>!</strong>wo Ihre Dateien im Wiki.js gespeichert werden sollen. Jede Datei kann einen eigenen Pfad bekommen oder Sie nutzen die automatische Struktur.</p>
+            <strong>Willkommen zurück, <span id="greetingUsername"></span>!</strong>
         </div>
-ay">Wiki-Pfad: <span class="path-toggle" id="wiki_path_toggle">[Bearbeiten]</span></label>
+
         <!-- User Settings Section -->
-        <div class="user-settings" id="userSettingsSection" style="display: none;">r">
-            <h3>Benutzereinstellungen</h3>: 5px;">
-            <div class="input-group">holder="z.B. DocFlow/Benutzer" style="flex-grow: 1;">
+        <div class="user-settings" id="userSettingsSection" style="display: none;">
+            <h3>Benutzereinstellungen</h3>
+            <div class="input-group">
                 <label for="username">Benutzername:</label>
                 <input type="text" id="username" placeholder="Ihr Name">
-                <button type="button" id="saveUserSettings" class="small-button">Speichern</button>lass="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
+                <button type="button" id="saveUserSettings" class="small-button">Speichern</button>
             </div>
-        </div>lass="info-text" style="width: 100%; margin-top: 5px;">
-        <div style="text-align: right; margin-bottom: 15px;">tisch unter '<span id="default-path-example">DocFlow/Benutzer/YYYY-MM-DD</span>' gespeichert.
+        </div>
+        <div style="text-align: right; margin-bottom: 15px;">
             <button type="button" id="toggleSettings" class="settings-toggle">Benutzereinstellungen</button>
         </div>
-                    <!-- Directory browser modal -->
-        <form action="/" method="post" enctype="multipart/form-data" id="uploadForm">class="modal" style="display: none;">
+
+        <form action="/" method="post" enctype="multipart/form-data" id="uploadForm">
             <!-- Hidden username field that will be populated via JS -->
-            <input type="hidden" id="userNameHidden" name="username" value="">mes;</span>
-3>
-            <label for="file">Dateien auswählen:</label>hnisse werden geladen...</div>
+            <input type="hidden" id="userNameHidden" name="username" value="">
+
+            <label for="file">Dateien auswählen:</label>
             <input type="file" id="file" name="files" multiple>
-            <button type="button" id="helpFormatsButton" class="small-button" style="margin-left: 8px;">Unterstützte Formate</button>
-toryBtn" class="small-button">Auswählen</button>
+
             <div id="fileList" class="file-info">
                 <p>Keine Dateien ausgewählt</p>
             </div>
 
             <div class="checkbox-container">
                 <input type="checkbox" id="wikiUpload" name="upload_to_wiki" style="display: inline-block; margin-right: 5px;">
-                <label for="wikiUpload" style="display: inline-block;">Direkt in Wiki.js hochladen</label>                <!-- Collapsible files section -->
-            </div>id="filesToggleHeader" style="margin-top: 20px; cursor: pointer;">
+                <label for="wikiUpload" style="display: inline-block;">Direkt in Wiki.js hochladen</label>
+            </div>
 
             <div id="wikiOptions" class="wiki-options hidden">
                 <h3>Wiki.js Einstellungen</h3>
-                <p>Hier können Sie festlegen, wo Ihre Dateien im Wiki.js gespeichert werden sollen. Jede Datei kann einen eigenen Pfad bekommen oder Sie nutzen die automatische Struktur.</p>d="wikiFileSettings" style="display: none;"></div>
+                <p>Hier können Sie festlegen, wo Ihre Dateien im Wiki.js gespeichert werden sollen. Jede Datei kann einen eigenen Pfad bekommen oder Sie nutzen die automatische Struktur.</p>
                 <div id="defaultFolderSection">
                     <label for="wiki_path_display">Wiki-Pfad: <span class="path-toggle" id="wiki_path_toggle">[Bearbeiten]</span></label>
-                    <div class="path-display" id="wiki_path_display">DocFlow</div>            <div class="actions" style="margin-top: 20px;">
+                    <div class="path-display" id="wiki_path_display">DocFlow</div>
                     <div class="path-input-container" id="wiki_path_input_container">
                         <div class="input-group wiki-path-selector" style="margin-top: 5px;">
                             <input type="text" id="defaultFolder" name="default_folder" placeholder="z.B. DocFlow/Benutzer" style="flex-grow: 1;">
                             <button type="button" id="browseFolders" class="small-button">Ordner wählen</button>
-                        </div>        <!-- Footer with creator information and API test -->
+                        </div>
                         <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
-                    </div>von Joachim Mild für TresorHaus GmbH</div>
+                    </div>
                     <div class="info-text" style="width: 100%; margin-top: 5px;">
-                        Falls Sie keinen Pfad angeben, werden Ihre Dateien automatisch unter '<span id="default-path-example">DocFlow/Benutzer/YYYY-MM-DD</span>' gespeichert.="testWikiButton" class="small-button">Wiki.js API testen</button>
+                        Falls Sie keinen Pfad angeben, werden Ihre Dateien automatisch unter '<span id="default-path-example">DocFlow/Benutzer/YYYY-MM-DD</span>' gespeichert.
                     </div>
 
                     <!-- Directory browser modal -->
                     <div id="directoryBrowserModal" class="modal" style="display: none;">
-                        <div class="modal-content"><!-- Formats help modal -->
-                            <span class="close">&times;</span>dal">
+                        <div class="modal-content">
+                            <span class="close">&times;</span>
                             <h3>Wiki.js Verzeichnisstruktur</h3>
-                            <div id="loadingDirectories">Verzeichnisse werden geladen...</div>odal" class="close">&times;</span>
+                            <div id="loadingDirectories">Verzeichnisse werden geladen...</div>
                             <div id="directoryTree" class="directory-tree"></div>
-                            <div class="modal-actions">en unterstützt:</p>
+                            <div class="modal-actions">
                                 <button id="selectDirectoryBtn" class="small-button">Auswählen</button>
                                 <button id="cancelDirectoryBtn" class="small-button">Abbrechen</button>
                             </div>
-                        </div>/li>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Collapsible files section -->
-                <div class="files-section-header" id="filesToggleHeader" style="margin-top: 20px; cursor: pointer;">     </ul>
+                <div class="files-section-header" id="filesToggleHeader" style="margin-top: 20px; cursor: pointer;">
                     <h3 style="display: inline-block; margin-right: 10px;">Dokument Ablage anpassen</h3>
                     <button class="blue-toggle-btn" id="filesToggle">[Ausklappen]</button>
-                </div>ntentLoaded', function() {h4>
+                </div>
                 <div id="wikiFileSettings" style="display: none;"></div>
             </div>
 
-            <div class="actions" style="margin-top: 20px;">onst wikiOptions = document.getElementById('wikiOptions');       </ul>
-                <button type="submit">Konvertieren</button>            const wikiFileSettings = document.getElementById('wikiFileSettings');                </div>
-            </div>ument.getElementById('testWikiButton');up">
-        </form>.getElementById('username');
-ById('userNameHidden');
-        <!-- Footer with creator information and API test -->ntById('toggleSettings');xlsx)</li>
-        <div class="footer">ion = document.getElementById('userSettingsSection');cument Spreadsheet (.ods)</li>
-            <div>Entwickelt von Joachim Mild für TresorHaus GmbH</div>s');
+            <div class="actions" style="margin-top: 20px;">
+                <button type="submit">Konvertieren</button>
+            </div>
+        </form>
+
+        <!-- Footer with creator information and API test -->
+        <div class="footer">
+            <div>Entwickelt von Joachim Mild für TresorHaus GmbH</div>
             <div class="footer-buttons">
-                <button type="button" id="testWikiButton" class="small-button">Wiki.js API testen</button> helpFormatsButton = document.getElementById('helpFormatsButton');/div>
-            </div>al = document.getElementById('formatsModal');format-group">
-        </div>onst closeFormatsModal = document.getElementById('closeFormatsModal');       <h4>Andere</h4>
-    </div>                                <ul>
-    functionalitypdf)</li>
-    <!-- Supported Formats Modal -->ener('click', function() {htm)</li>
-    <div id="formatsModal" class="modal">
-        <div class="modal-content">
-            <span class="close" id="closeFormatsModal">&times;</span>
-            <h3>Unterstützte Dateiformate</h3>unction() {
-            <div class="formats-container">
-                <div class="format-group">            });                <p>Hinweis: Die Qualität der Konvertierung kann je nach Komplexität der Dokumente variieren.</p>
-                    <h4>Textdokumente</h4>
-                    <ul>
-                        <li>Microsoft Word (.doc, .docx)</li>
-                        <li>OpenDocument Text (.odt)</li>
-                        <li>Rich Text Format (.rtf)</li>
-                        <li>Einfache Textdateien (.txt)</li>
-                    </ul>ElementById('file');
-                </div>okie management functions fileList = document.getElementById('fileList');
-            function setCookie(name, value, days) {unction setCookie(name, value, days) {onst wikiUpload = document.getElementById('wikiUpload');
-                const date = new Date();                const date = new Date();            const wikiOptions = document.getElementById('wikiOptions');
-                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));0 * 60 * 1000));('wikiFileSettings');
-                const expires = "; expires=" + date.toUTCString();e.toUTCString();mentById('testWikiButton');
-                document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/; SameSite=Lax";=" + encodeURIComponent(value) + expires + "; path=/; SameSite=Lax";.getElementById('username');
-            }
+                <button type="button" id="testWikiButton" class="small-button">Wiki.js API testen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('file');
+            const fileList = document.getElementById('fileList');
+            const wikiUpload = document.getElementById('wikiUpload');
+            const wikiOptions = document.getElementById('wikiOptions');
+            const wikiFileSettings = document.getElementById('wikiFileSettings');
+            const testWikiButton = document.getElementById('testWikiButton');
+            const usernameInput = document.getElementById('username');
+            const usernameHidden = document.getElementById('userNameHidden');
             const toggleSettings = document.getElementById('toggleSettings');
-            function getCookie(name) {'userSettingsSection');
-                const nameEQ = name + "=";
-                const ca = document.cookie.split(';');
-                for(let i = 0; i < ca.length; i++) {;
-                    let c = ca[i];
-                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);string(1, c.length);ById('closeFormatsModal');
-                    if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));=== 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
-                }
-                return null;eturn null;ion setCookie(name, value, days) {
-                const date = new Date();            }            }
+            const userSettingsSection = document.getElementById('userSettingsSection');
+            const saveUserSettings = document.getElementById('saveUserSettings');
+            const defaultFolder = document.getElementById('defaultFolder');
+
+            // Cookie management functions
+            function setCookie(name, value, days) {
+                const date = new Date();
                 date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
                 const expires = "; expires=" + date.toUTCString();
                 document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/; SameSite=Lax";
-            }onst savedUsername = getCookie('docflow_username');onst savedUsername = getCookie('docflow_username');
-                if (savedUsername) {                if (savedUsername) {
+            }
+
             function getCookie(name) {
-                const nameEQ = name + "=";ame;ame;
-                const ca = document.cookie.split(';');););
+                const nameEQ = name + "=";
+                const ca = document.cookie.split(';');
                 for(let i = 0; i < ca.length; i++) {
                     let c = ca[i];
-                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);eeting');eeting');
+                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
                     if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
-                }                    if (userGreeting && greetingUsername) {                    if (userGreeting && greetingUsername) {
-                return null;Content = savedUsername;Content = savedUsername;
+                }
+                return null;
             }
 
             // Load saved settings
-            function loadSavedSettings() {            }            }
+            function loadSavedSettings() {
                 const savedUsername = getCookie('docflow_username');
-                if (savedUsername) {show the usernameshow the username
+                if (savedUsername) {
                     usernameInput.value = savedUsername;
                     usernameHidden.value = savedUsername;
-                    updateUserDisplay(savedUsername);   usernameHidden.value = username;   usernameHidden.value = username;
+                    updateUserDisplay(savedUsername);
 
-                    // Show greetingng if username is setng if username is set
-                    const userGreeting = document.getElementById('userGreeting');rGreeting');rGreeting');
-                    const greetingUsername = document.getElementById('greetingUsername');reetingUsername');reetingUsername');
-                    if (userGreeting && greetingUsername) {) {) {
+                    // Show greeting
+                    const userGreeting = document.getElementById('userGreeting');
+                    const greetingUsername = document.getElementById('greetingUsername');
+                    if (userGreeting && greetingUsername) {
                         greetingUsername.textContent = savedUsername;
-                        userGreeting.style.display = 'block';Greeting.style.display = 'block';Greeting.style.display = 'block';
+                        userGreeting.style.display = 'block';
                     }
                 }
             }
 
-            // Update any UI elements that show the username                // Update the placeholder in the default folder input if it exists                // Update the placeholder in the default folder input if it exists
-            function updateUserDisplay(username) {) {) {
-                // Update the hidden fieldrname || 'Benutzer'}`;rname || 'Benutzer'}`;
+            // Update any UI elements that show the username
+            function updateUserDisplay(username) {
+                // Update the hidden field
                 usernameHidden.value = username;
 
                 // Show greeting if username is set
-                const userGreeting = document.getElementById('userGreeting');e() {e() {
+                const userGreeting = document.getElementById('userGreeting');
                 const greetingUsername = document.getElementById('greetingUsername');
-                if (username && userGreeting && greetingUsername) {[0];[0];
-                    greetingUsername.textContent = username;                    const timePart = `${currentDate.getHours()}${currentDate.getMinutes()}`;                    const timePart = `${currentDate.getHours()}${currentDate.getMinutes()}`;
+                if (username && userGreeting && greetingUsername) {
+                    greetingUsername.textContent = username;
                     userGreeting.style.display = 'block';
-                } else if (userGreeting) {t defaultPathExample = document.getElementById('default-path-example');t defaultPathExample = document.getElementById('default-path-example');
+                } else if (userGreeting) {
                     userGreeting.style.display = 'none';
-                }   if (defaultPathExample) {   if (defaultPathExample) {
-         defaultPathExample.textContent = `DocFlow/${username}/${datePart}-${timePart}`;         defaultPathExample.textContent = `DocFlow/${username}/${datePart}-${timePart}`;
-                // Update the placeholder in the default folder input if it exists                    }                    }
+                }
+
+                // Update the placeholder in the default folder input if it exists
                 if (defaultFolder) {
                     defaultFolder.placeholder = `z.B. DocFlow/${username || 'Benutzer'}`;
-                }                // Call the function initially and when username changes                // Call the function initially and when username changes
+                }
 
-                // Update the example default path display with actual user values'input', updateDefaultPathExample);'input', updateDefaultPathExample);
-                function updateDefaultPathExample() {entListener('click', updateDefaultPathExample);entListener('click', updateDefaultPathExample);
-                    const currentDate = new Date();            }            }
+                // Update the example default path display with actual user values
+                function updateDefaultPathExample() {
+                    const currentDate = new Date();
                     const datePart = currentDate.toISOString().split('T')[0];
                     const timePart = `${currentDate.getHours()}${currentDate.getMinutes()}`;
-                    const username = usernameHidden.value || 'Benutzer';('click', function() {('click', function() {
-                    const defaultPathExample = document.getElementById('default-path-example');le.display === 'none') {le.display === 'none') {
-le.display = 'block';le.display = 'block';
-                    if (defaultPathExample) {ent = 'Benutzereinstellungen ausblenden';ent = 'Benutzereinstellungen ausblenden';
-                        defaultPathExample.textContent = `DocFlow/${username}/${datePart}-${timePart}`;                } else {                } else {
+                    const username = usernameHidden.value || 'Benutzer';
+                    const defaultPathExample = document.getElementById('default-path-example');
+
+                    if (defaultPathExample) {
+                        defaultPathExample.textContent = `DocFlow/${username}/${datePart}-${timePart}`;
                     }
                 }
-   }   }
-                // Call the function initially and when username changes            });            });
+
+                // Call the function initially and when username changes
                 updateDefaultPathExample();
                 usernameInput.addEventListener('input', updateDefaultPathExample);
-                saveUserSettings.addEventListener('click', updateDefaultPathExample);Listener('click', function() {Listener('click', function() {
-            }                const username = usernameInput.value.trim();                const username = usernameInput.value.trim();
+                saveUserSettings.addEventListener('click', updateDefaultPathExample);
+            }
 
-            // Settings togglename', username, 365); // Save for 1 yearname', username, 365); // Save for 1 year
-            toggleSettings.addEventListener('click', function() {ame);ame);
-                if (userSettingsSection.style.display === 'none') {le.display = 'none';le.display = 'none';
-                    userSettingsSection.style.display = 'block';ent = 'Benutzereinstellungen';ent = 'Benutzereinstellungen';
+            // Settings toggle
+            toggleSettings.addEventListener('click', function() {
+                if (userSettingsSection.style.display === 'none') {
+                    userSettingsSection.style.display = 'block';
                     toggleSettings.textContent = 'Benutzereinstellungen ausblenden';
-                } else {                    alert(`Benutzereinstellungen für "${username}" wurden gespeichert.`);                    alert(`Benutzereinstellungen für "${username}" wurden gespeichert.`);
+                } else {
                     userSettingsSection.style.display = 'none';
                     toggleSettings.textContent = 'Benutzereinstellungen';
-                }   }   }
-            });            });            });
-
-            // Save user settingsiki.js-Pfadeiki.js-Pfade
-            saveUserSettings.addEventListener('click', function() {_\/]+$/;_\/]+$/;
-                const username = usernameInput.value.trim();
-                if (username) {
-                    setCookie('docflow_username', username, 365); // Save for 1 year            function sanitizeWikiTitle(title) {            function sanitizeWikiTitle(title) {
-                    updateUserDisplay(username);urn '';urn '';
-                    userSettingsSection.style.display = 'none';
-                    toggleSettings.textContent = 'Benutzereinstellungen'; characters to their ASCII equivalents characters to their ASCII equivalents
-
-                    alert(`Benutzereinstellungen für "${username}" wurden gespeichert.`);
-                } else {   .replace(/[öÖ]/g, 'oe')   .replace(/[öÖ]/g, 'oe')
-                    alert('Bitte geben Sie einen Benutzernamen ein.');                    .replace(/[üÜ]/g, 'ue')                    .replace(/[üÜ]/g, 'ue')
                 }
             });
-haractersharacters
+
+            // Save user settings
+            saveUserSettings.addEventListener('click', function() {
+                const username = usernameInput.value.trim();
+                if (username) {
+                    setCookie('docflow_username', username, 365); // Save for 1 year
+                    updateUserDisplay(username);
+                    userSettingsSection.style.display = 'none';
+                    toggleSettings.textContent = 'Benutzereinstellungen';
+
+                    alert(`Benutzereinstellungen für "${username}" wurden gespeichert.`);
+                } else {
+                    alert('Bitte geben Sie einen Benutzernamen ein.');
+                }
+            });
+
             // Regulärer Ausdruck für gültige Wiki.js-Pfade
             const validPathRegex = /^[a-zA-Z0-9\-_\/]+$/;
 
-            // Funktion zum Sanitieren von Wiki.js Seitentitelnnktion zum Sanitieren von Wiki.js Pfadennktion zum Sanitieren von Wiki.js Pfaden
-            function sanitizeWikiTitle(title) {            function sanitizeWikiPath(path) {            function sanitizeWikiPath(path) {
+            // Funktion zum Sanitieren von Wiki.js Seitentiteln
+            function sanitizeWikiTitle(title) {
                 if (!title) return '';
 
-                // First, normalize special characters to their ASCII equivalentsrmalize special charactersrmalize special characters
-                const normalizedTitle = title   const normalizedPath = path   const normalizedPath = path
-                    .replace(/[äÄ]/g, 'ae')                    .replace(/[äÄ]/g, 'ae')                    .replace(/[äÄ]/g, 'ae')
-                    .replace(/[öÖ]/g, 'oe')e')e')
+                // First, normalize special characters to their ASCII equivalents
+                const normalizedTitle = title
+                    .replace(/[äÄ]/g, 'ae')
+                    .replace(/[öÖ]/g, 'oe')
                     .replace(/[üÜ]/g, 'ue')
                     .replace(/[ß]/g, 'ss');
 
-                // Then remove all remaining disallowed characters                // Replace spaces with dashes and remove disallowed characters                // Replace spaces with dashes and remove disallowed characters
-                return normalizedTitle.replace(/[^a-zA-Z0-9 \-_]/g, '').trim();zA-Z0-9\-_\/]/g, '').trim();zA-Z0-9\-_\/]/g, '').trim();
+                // Then remove all remaining disallowed characters
+                return normalizedTitle.replace(/[^a-zA-Z0-9 \-_]/g, '').trim();
             }
 
-            // Funktion zum Sanitieren von Wiki.js Pfadenon to validate Wiki.js path inputon to validate Wiki.js path input
-            function sanitizeWikiPath(path) {            function validateWikiInput(input) {            function validateWikiInput(input) {
-                if (!path) return '';.trim();.trim();
-id}`;id}`;
-                // First, normalize special characters                let warning = document.getElementById(warningId);                let warning = document.getElementById(warningId);
+            // Funktion zum Sanitieren von Wiki.js Pfaden
+            function sanitizeWikiPath(path) {
+                if (!path) return '';
+
+                // First, normalize special characters
                 const normalizedPath = path
                     .replace(/[äÄ]/g, 'ae')
-                    .replace(/[öÖ]/g, 'oe')Element('div');Element('div');
-                    .replace(/[üÜ]/g, 'ue')arning.id = warningId;arning.id = warningId;
-                    .replace(/[ß]/g, 'ss');ing.className = 'input-warning';ing.className = 'input-warning';
+                    .replace(/[öÖ]/g, 'oe')
+                    .replace(/[üÜ]/g, 'ue')
+                    .replace(/[ß]/g, 'ss');
 
                 // Replace spaces with dashes and remove disallowed characters
                 return normalizedPath.replace(/ /g, '-').replace(/[^a-zA-Z0-9\-_\/]/g, '').trim();
-            } // Validate path (no spaces, no special chars) // Validate path (no spaces, no special chars)
-                if (value && !validPathRegex.test(value)) {                if (value && !validPathRegex.test(value)) {
-            // Function to validate Wiki.js path inputt');t');
-            function validateWikiInput(input) {Nur Buchstaben, Zahlen, Bindestriche, Unterstriche und Schrägstriche sind erlaubt.';Nur Buchstaben, Zahlen, Bindestriche, Unterstriche und Schrägstriche sind erlaubt.';
-                const value = input.value.trim();isplay = 'block';isplay = 'block';
+            }
+
+            // Function to validate Wiki.js path input
+            function validateWikiInput(input) {
+                const value = input.value.trim();
                 const warningId = `warning-${input.id}`;
                 let warning = document.getElementById(warningId);
 
                 if (!warning) {
-                    warning = document.createElement('div');arning.style.display = 'none';arning.style.display = 'none';
-                    warning.id = warningId; return true; return true;
-                    warning.className = 'input-warning';            }            }
+                    warning = document.createElement('div');
+                    warning.id = warningId;
+                    warning.className = 'input-warning';
                     input.insertAdjacentElement('afterend', warning);
                 }
- function() { function() {
-                // Validate path (no spaces, no special chars)                if (fileInput.files.length > 0) {                if (fileInput.files.length > 0) {
-                if (value && !validPathRegex.test(value)) {lte Dateien:</h3><ul>';lte Dateien:</h3><ul>';
+
+                // Validate path (no spaces, no special chars)
+                if (value && !validPathRegex.test(value)) {
                     input.classList.add('invalid-input');
                     warning.textContent = 'Ungültige Zeichen! Nur Buchstaben, Zahlen, Bindestriche, Unterstriche und Schrägstriche sind erlaubt.';
                     warning.style.display = 'block';
-                    return false;                        filesHtml += `<li>${file.name} (${(file.size / 1024).toFixed(2)} KB)</li>`;                        filesHtml += `<li>${file.name} (${(file.size / 1024).toFixed(2)} KB)</li>`;
+                    return false;
                 }
 
-                input.classList.remove('invalid-input');ilesHtml += '</ul>';ilesHtml += '</ul>';
-                warning.style.display = 'none';                    fileList.innerHTML = filesHtml;                    fileList.innerHTML = filesHtml;
+                input.classList.remove('invalid-input');
+                warning.style.display = 'none';
                 return true;
-            }gs if the checkbox is checkedgs if the checkbox is checked
+            }
 
-            // File input change handler   updateWikiSettings();   updateWikiSettings();
-            fileInput.addEventListener('change', function() {                    }                    }
+            // File input change handler
+            fileInput.addEventListener('change', function() {
                 if (fileInput.files.length > 0) {
-                    let filesHtml = '<h3>Ausgewählte Dateien:</h3><ul>';en ausgewählt</p>';en ausgewählt</p>';
-;;
-                    for (let i = 0; i < fileInput.files.length; i++) {                }                }
+                    let filesHtml = '<h3>Ausgewählte Dateien:</h3><ul>';
+
+                    for (let i = 0; i < fileInput.files.length; i++) {
                         const file = fileInput.files[i];
                         filesHtml += `<li>${file.name} (${(file.size / 1024).toFixed(2)} KB)</li>`;
-                    }            // Wiki.js upload checkbox change handler            // Wiki.js upload checkbox change handler
-ion() {ion() {
+                    }
+
                     filesHtml += '</ul>';
-                    fileList.innerHTML = filesHtml;                    wikiOptions.classList.remove('hidden');                    wikiOptions.classList.remove('hidden');
+                    fileList.innerHTML = filesHtml;
 
                     // Update Wiki.js settings if the checkbox is checked
                     if (wikiUpload.checked) {
@@ -697,16 +648,16 @@ ion() {ion() {
                     }
                 } else {
                     fileList.innerHTML = '<p>Keine Dateien ausgewählt</p>';
-                    wikiFileSettings.innerHTML = '';            function updateWikiSettings() {            function updateWikiSettings() {
+                    wikiFileSettings.innerHTML = '';
                 }
             });
 
-            // Wiki.js upload checkbox change handler                    // Update the toggle text to show number of files                    // Update the toggle text to show number of files
-            wikiUpload.addEventListener('change', function() {.getElementById('filesToggle');.getElementById('filesToggle');
-                if (this.checked) {getElementById('filesToggleHeader');getElementById('filesToggleHeader');
+            // Wiki.js upload checkbox change handler
+            wikiUpload.addEventListener('change', function() {
+                if (this.checked) {
                     wikiOptions.classList.remove('hidden');
                     updateWikiSettings();
-                } else {e.textContent = `Ausklappen (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})`;e.textContent = `Ausklappen (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})`;
+                } else {
                     wikiOptions.classList.add('hidden');
                 }
             });
@@ -714,116 +665,116 @@ ion() {ion() {
             // Function to update Wiki.js settings based on selected files
             function updateWikiSettings() {
                 wikiFileSettings.innerHTML = '';
-< fileInput.files.length; i++) {< fileInput.files.length; i++) {
-                if (fileInput.files.length > 0) { = fileInput.files[i]; = fileInput.files[i];
-                    // Update the toggle text to show number of filesnst fileName = file.name;nst fileName = file.name;
+
+                if (fileInput.files.length > 0) {
+                    // Update the toggle text to show number of files
                     const filesToggle = document.getElementById('filesToggle');
-                    const filesToggleHeader = document.getElementById('filesToggleHeader');tensiontension
-                        const fileNameWithoutExt = fileName.split('.').slice(0, -1).join('.');                        const fileNameWithoutExt = fileName.split('.').slice(0, -1).join('.');
+                    const filesToggleHeader = document.getElementById('filesToggleHeader');
+
                     if (filesToggle) {
                         filesToggle.textContent = `Ausklappen (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})`;
                     }
 
                     // Make the header visible
-                    if (filesToggleHeader) {                        const currentDate = new Date();                        const currentDate = new Date();
-                        filesToggleHeader.style.display = 'block';split('T')[0];split('T')[0];
-                    }ate.getHours()}${currentDate.getMinutes()}`;ate.getHours()}${currentDate.getMinutes()}`;
-;;
+                    if (filesToggleHeader) {
+                        filesToggleHeader.style.display = 'block';
+                    }
+
                     for (let i = 0; i < fileInput.files.length; i++) {
-                        const file = fileInput.files[i];tePart}-${timePart}`;tePart}-${timePart}`;
+                        const file = fileInput.files[i];
                         const fileName = file.name;
-                        const fileDetail = document.createElement('div');                        const fileDetail = document.createElement('div');
+
                         // Store the original filename without extension
                         const fileNameWithoutExt = fileName.split('.').slice(0, -1).join('.');
 
-                        // Sanitize the title correctly                        fileDetail.innerHTML = `                        fileDetail.innerHTML = `
+                        // Sanitize the title correctly
                         const sanitizedTitle = sanitizeWikiTitle(fileNameWithoutExt);
 
-                        // Generate default pathe_hidden_${i}" name="wiki_title_${i}" value="${sanitizedTitle}">e_hidden_${i}" name="wiki_title_${i}" value="${sanitizedTitle}">
+                        // Generate default path
                         const currentDate = new Date();
                         const datePart = currentDate.toISOString().split('T')[0];
-                        const timePart = `${currentDate.getHours()}${currentDate.getMinutes()}`;span class="path-toggle" id="path_toggle_${i}">[Bearbeiten]</span></label>span class="path-toggle" id="path_toggle_${i}">[Bearbeiten]</span></label>
-                        const defaultFolderValue = defaultFolder ? defaultFolder.value : '';                                <div class="path-display" id="wiki_path_display_${i}">${defaultPath}</div>                                <div class="path-display" id="wiki_path_display_${i}">${defaultPath}</div>
-                        const username = usernameHidden.value || 'Benutzer';d="path_input_container_${i}">d="path_input_container_${i}">
-                        const defaultPath = `${defaultFolderValue || 'DocFlow'}/${username}/${datePart}-${timePart}`;iki_path_${i}" name="wiki_path_${i}" value="${defaultPath}"iki_path_${i}" name="wiki_path_${i}" value="${defaultPath}"
-              placeholder="z.B. ${defaultPath}">              placeholder="z.B. ${defaultPath}">
-                        const fileDetail = document.createElement('div');                                    <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>                                    <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
+                        const timePart = `${currentDate.getHours()}${currentDate.getMinutes()}`;
+                        const defaultFolderValue = defaultFolder ? defaultFolder.value : '';
+                        const username = usernameHidden.value || 'Benutzer';
+                        const defaultPath = `${defaultFolderValue || 'DocFlow'}/${username}/${datePart}-${timePart}`;
+
+                        const fileDetail = document.createElement('div');
                         fileDetail.className = 'file-detail';
                         fileDetail.style.display = 'block';
-                        `;                        `;
+
                         fileDetail.innerHTML = `
-                            <h4>Datei: ${fileName}</h4>iFileSettings.appendChild(fileDetail);iFileSettings.appendChild(fileDetail);
+                            <h4>Datei: ${fileName}</h4>
                             <div>
-                                <input type="hidden" id="wiki_title_hidden_${i}" name="wiki_title_${i}" value="${sanitizedTitle}">// Add event listeners for the path display and toggle// Add event listeners for the path display and toggle
-                            </div>_toggle_${i}`);_toggle_${i}`);
-                            <div>`);`);
-                                <label for="wiki_path_display_${i}">Wiki.js Pfad: <span class="path-toggle" id="path_toggle_${i}">[Bearbeiten]</span></label>iner = document.getElementById(`path_input_container_${i}`);iner = document.getElementById(`path_input_container_${i}`);
-                                <div class="path-display" id="wiki_path_display_${i}">${defaultPath}</div>(`wiki_path_${i}`);(`wiki_path_${i}`);
+                                <input type="hidden" id="wiki_title_hidden_${i}" name="wiki_title_${i}" value="${sanitizedTitle}">
+                            </div>
+                            <div>
+                                <label for="wiki_path_display_${i}">Wiki.js Pfad: <span class="path-toggle" id="path_toggle_${i}">[Bearbeiten]</span></label>
+                                <div class="path-display" id="wiki_path_display_${i}">${defaultPath}</div>
                                 <div class="path-input-container" id="path_input_container_${i}">
-                                    <input type="text" id="wiki_path_${i}" name="wiki_path_${i}" value="${defaultPath}"       // Function to toggle path input visibility       // Function to toggle path input visibility
-                                           placeholder="z.B. ${defaultPath}">           function togglePathInput() {           function togglePathInput() {
-                                    <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>                            const isVisible = pathInputContainer.style.display === 'block';                            const isVisible = pathInputContainer.style.display === 'block';
-                                </div>sVisible ? 'none' : 'block';sVisible ? 'none' : 'block';
-                            </div>';';
+                                    <input type="text" id="wiki_path_${i}" name="wiki_path_${i}" value="${defaultPath}"
+                                           placeholder="z.B. ${defaultPath}">
+                                    <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
+                                </div>
+                            </div>
                         `;
 
-                        wikiFileSettings.appendChild(fileDetail);lick event to both toggle and displaylick event to both toggle and display
-Listener('click', togglePathInput);Listener('click', togglePathInput);
+                        wikiFileSettings.appendChild(fileDetail);
+
                         // Add event listeners for the path display and toggle
                         const pathToggle = document.getElementById(`path_toggle_${i}`);
                         const pathDisplay = document.getElementById(`wiki_path_display_${i}`);
-                        const pathInputContainer = document.getElementById(`path_input_container_${i}`);Listener('input', function() {Listener('input', function() {
-                        const pathInput = document.getElementById(`wiki_path_${i}`); // Store original value for comparison // Store original value for comparison
-           const originalValue = this.value;           const originalValue = this.value;
-                        // Function to toggle path input visibility                            // Auto-sanitize path on input                            // Auto-sanitize path on input
-                        function togglePathInput() {edValue = sanitizeWikiPath(originalValue);edValue = sanitizeWikiPath(originalValue);
+                        const pathInputContainer = document.getElementById(`path_input_container_${i}`);
+                        const pathInput = document.getElementById(`wiki_path_${i}`);
+
+                        // Function to toggle path input visibility
+                        function togglePathInput() {
                             const isVisible = pathInputContainer.style.display === 'block';
-                            pathInputContainer.style.display = isVisible ? 'none' : 'block';                            if (sanitizedValue !== originalValue) {                            if (sanitizedValue !== originalValue) {
-                            pathToggle.textContent = isVisible ? '[Bearbeiten]' : '[Schließen]'; sanitizedValue; sanitizedValue;
+                            pathInputContainer.style.display = isVisible ? 'none' : 'block';
+                            pathToggle.textContent = isVisible ? '[Bearbeiten]' : '[Schließen]';
                         }
 
                         // Add click event to both toggle and display
-                        pathToggle.addEventListener('click', togglePathInput);ontent = this.value;ontent = this.value;
+                        pathToggle.addEventListener('click', togglePathInput);
                         pathDisplay.addEventListener('click', togglePathInput);
-       validateWikiInput(this);       validateWikiInput(this);
-                        // Update display when input changes                        });                        });
+
+                        // Update display when input changes
                         pathInput.addEventListener('input', function() {
                             // Store original value for comparison
                             const originalValue = this.value;
-                            // Auto-sanitize path on inputonst filesToggleHeader = document.getElementById('filesToggleHeader');onst filesToggleHeader = document.getElementById('filesToggleHeader');
-                            const sanitizedValue = sanitizeWikiPath(originalValue);   if (filesToggleHeader) {   if (filesToggleHeader) {
-         filesToggleHeader.style.display = 'none';         filesToggleHeader.style.display = 'none';
-                            if (sanitizedValue !== originalValue) {                    }                    }
+                            // Auto-sanitize path on input
+                            const sanitizedValue = sanitizeWikiPath(originalValue);
+
+                            if (sanitizedValue !== originalValue) {
                                 this.value = sanitizedValue;
                             }
 
                             // Update the display
-                            pathDisplay.textContent = this.value;            document.getElementById('uploadForm').addEventListener('submit', function(event) {            document.getElementById('uploadForm').addEventListener('submit', function(event) {
+                            pathDisplay.textContent = this.value;
 
-                            validateWikiInput(this);ernameHidden.value.trim();ernameHidden.value.trim();
-                        }); (!username) { (!username) {
+                            validateWikiInput(this);
+                        });
                     }
-                } else {e geben Sie zuerst einen Benutzernamen in den Einstellungen ein, bevor Sie fortfahren können.');e geben Sie zuerst einen Benutzernamen in den Einstellungen ein, bevor Sie fortfahren können.');
-                    // Hide the files toggle header if no files selectedstyle.display = 'block';style.display = 'block';
-                    const filesToggleHeader = document.getElementById('filesToggleHeader');  toggleSettings.textContent = 'Benutzereinstellungen ausblenden';  toggleSettings.textContent = 'Benutzereinstellungen ausblenden';
-                    if (filesToggleHeader) {.focus();.focus();
+                } else {
+                    // Hide the files toggle header if no files selected
+                    const filesToggleHeader = document.getElementById('filesToggleHeader');
+                    if (filesToggleHeader) {
                         filesToggleHeader.style.display = 'none';
                     }
                 }
             }
 
             // Validate all wiki settings before form submission
-            document.getElementById('uploadForm').addEventListener('submit', function(event) {     // Check all path inputs     // Check all path inputs
-                // Check if username is set                    for (let i = 0; i < fileInput.files.length; i++) {                    for (let i = 0; i < fileInput.files.length; i++) {
-                const username = usernameHidden.value.trim();getElementById(`wiki_path_${i}`);getElementById(`wiki_path_${i}`);
-                if (!username) {Input && !validateWikiInput(pathInput)) {Input && !validateWikiInput(pathInput)) {
-                    event.preventDefault();                            hasErrors = true;                            hasErrors = true;
+            document.getElementById('uploadForm').addEventListener('submit', function(event) {
+                // Check if username is set
+                const username = usernameHidden.value.trim();
+                if (!username) {
+                    event.preventDefault();
                     alert('Bitte geben Sie zuerst einen Benutzernamen in den Einstellungen ein, bevor Sie fortfahren können.');
                     userSettingsSection.style.display = 'block';
                     toggleSettings.textContent = 'Benutzereinstellungen ausblenden';
                     usernameInput.focus();
                     return;
-                }ki.js-Einstellungen.');ki.js-Einstellungen.');
+                }
 
                 if (wikiUpload.checked) {
                     let hasErrors = false;
@@ -833,94 +784,94 @@ Listener('click', togglePathInput);Listener('click', togglePathInput);
                         const pathInput = document.getElementById(`wiki_path_${i}`);
                         if (pathInput && !validateWikiInput(pathInput)) {
                             hasErrors = true;
-                        }connection', {connection', {
+                        }
                     }
 
-                    if (hasErrors) {                .then(response => response.json())                .then(response => response.json())
+                    if (hasErrors) {
                         event.preventDefault();
                         alert('Bitte korrigieren Sie die markierten Fehler bei den Wiki.js-Einstellungen.');
                     }
                 }
-            });bindung: ' + error);bindung: ' + error);
+            });
 
             // Test Wiki.js connection button
-            testWikiButton.addEventListener('click', function() {       this.disabled = false;       this.disabled = false;
-                this.disabled = true;                    this.textContent = 'Wiki.js API testen';                    this.textContent = 'Wiki.js API testen';
+            testWikiButton.addEventListener('click', function() {
+                this.disabled = true;
                 this.textContent = 'Verbindung wird getestet...';
 
                 fetch('/test_wikijs_connection', {
-                    method: 'POST',saved settingssaved settings
-                })dSavedSettings();dSavedSettings();
+                    method: 'POST',
+                })
                 .then(response => response.json())
                 .then(data => {
-                    alert(data.message);document.getElementById('browseFolders');document.getElementById('browseFolders');
-                })st directoryBrowserModal = document.getElementById('directoryBrowserModal');st directoryBrowserModal = document.getElementById('directoryBrowserModal');
-                .catch(error => {            const directoryTree = document.getElementById('directoryTree');            const directoryTree = document.getElementById('directoryTree');
-                    alert('Fehler beim Testen der Verbindung: ' + error);Id('loadingDirectories');Id('loadingDirectories');
-                })ent.getElementById('selectDirectoryBtn');ent.getElementById('selectDirectoryBtn');
-                .finally(() => {););
+                    alert(data.message);
+                })
+                .catch(error => {
+                    alert('Fehler beim Testen der Verbindung: ' + error);
+                })
+                .finally(() => {
                     this.disabled = false;
                     this.textContent = 'Wiki.js API testen';
                 });
-            });            // Wiki path display and toggle elements            // Wiki path display and toggle elements
-oggle');oggle');
+            });
+
             // Initialize by loading saved settings
             loadSavedSettings();
 
             // Directory browser elements
-            const browseFoldersBtn = document.getElementById('browseFolders');der = document.getElementById('filesToggleHeader');der = document.getElementById('filesToggleHeader');
-            const directoryBrowserModal = document.getElementById('directoryBrowserModal');');');
+            const browseFoldersBtn = document.getElementById('browseFolders');
+            const directoryBrowserModal = document.getElementById('directoryBrowserModal');
             const directoryTree = document.getElementById('directoryTree');
             const loadingDirectories = document.getElementById('loadingDirectories');
             const selectDirectoryBtn = document.getElementById('selectDirectoryBtn');
-            const cancelDirectoryBtn = document.getElementById('cancelDirectoryBtn');tyle.display === 'block';tyle.display === 'block';
-            const closeModalBtn = document.querySelector('.close');ileSettings.style.display = isVisible ? 'none' : 'block';ileSettings.style.display = isVisible ? 'none' : 'block';
-            let selectedDirectory = null;                filesToggle.textContent = isVisible ?                filesToggle.textContent = isVisible ?
-t.files.length ? ` (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})` : ''}` :t.files.length ? ` (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})` : ''}` :
+            const cancelDirectoryBtn = document.getElementById('cancelDirectoryBtn');
+            const closeModalBtn = document.querySelector('.close');
+            let selectedDirectory = null;
+
             // Wiki path display and toggle elements
             const wikiPathToggle = document.getElementById('wiki_path_toggle');
             const wikiPathDisplay = document.getElementById('wiki_path_display');
-            const wikiPathInputContainer = document.getElementById('wiki_path_input_container');click event to files toggleclick event to files toggle
-f (filesToggleHeader) filesToggleHeader.addEventListener('click', function(e) {f (filesToggleHeader) filesToggleHeader.addEventListener('click', function(e) {
-            // Files toggle elements                if (e.target === filesToggle) return; // Don't trigger if button is clicked directly                if (e.target === filesToggle) return; // Don't trigger if button is clicked directly
+            const wikiPathInputContainer = document.getElementById('wiki_path_input_container');
+
+            // Files toggle elements
             const filesToggleHeader = document.getElementById('filesToggleHeader');
             const filesToggle = document.getElementById('filesToggle');
-tion(e) {tion(e) {
-            // Function to toggle the files sectionwith the header clickwith the header click
+
+            // Function to toggle the files section
             function toggleFilesSection() {
                 const isVisible = wikiFileSettings.style.display === 'block';
                 wikiFileSettings.style.display = isVisible ? 'none' : 'block';
-                filesToggle.textContent = isVisible ?            // Function to toggle Wiki path input visibility            // Function to toggle Wiki path input visibility
-                    `Ausklappen${fileInput.files.length ? ` (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})` : ''}` :nput() {nput() {
-                    'Einklappen';ikiPathInputContainer.style.display === 'block';ikiPathInputContainer.style.display === 'block';
-            }ble ? 'none' : 'block';ble ? 'none' : 'block';
-   wikiPathToggle.textContent = isVisible ? '[Bearbeiten]' : '[Schließen]';   wikiPathToggle.textContent = isVisible ? '[Bearbeiten]' : '[Schließen]';
-            // Add click event to files toggle            }            }
+                filesToggle.textContent = isVisible ?
+                    `Ausklappen${fileInput.files.length ? ` (${fileInput.files.length} ${fileInput.files.length === 1 ? 'Datei' : 'Dateien'})` : ''}` :
+                    'Einklappen';
+            }
+
+            // Add click event to files toggle
             if (filesToggleHeader) filesToggleHeader.addEventListener('click', function(e) {
                 if (e.target === filesToggle) return; // Don't trigger if button is clicked directly
-                toggleFilesSection();            if (wikiPathToggle) wikiPathToggle.addEventListener('click', toggleWikiPathInput);            if (wikiPathToggle) wikiPathToggle.addEventListener('click', toggleWikiPathInput);
-            });.addEventListener('click', toggleWikiPathInput);.addEventListener('click', toggleWikiPathInput);
+                toggleFilesSection();
+            });
             if (filesToggle) filesToggle.addEventListener('click', function(e) {
                 e.stopPropagation(); // Prevent double-triggering with the header click
                 toggleFilesSection();
-            });efaultFolder.addEventListener('input', function() {efaultFolder.addEventListener('input', function() {
-     // Auto-sanitize path on input     // Auto-sanitize path on input
-            // Function to toggle Wiki path input visibility                    const sanitizedValue = sanitizeWikiPath(this.value);                    const sanitizedValue = sanitizeWikiPath(this.value);
-            function toggleWikiPathInput() {== this.value) {== this.value) {
-                const isVisible = wikiPathInputContainer.style.display === 'block';itizedValue;itizedValue;
+            });
+
+            // Function to toggle Wiki path input visibility
+            function toggleWikiPathInput() {
+                const isVisible = wikiPathInputContainer.style.display === 'block';
                 wikiPathInputContainer.style.display = isVisible ? 'none' : 'block';
                 wikiPathToggle.textContent = isVisible ? '[Bearbeiten]' : '[Schließen]';
             }
-                    if (wikiPathDisplay) {                    if (wikiPathDisplay) {
-            // Add click event to both toggle and display for Wiki pathent = this.value || 'DocFlow';ent = this.value || 'DocFlow';
+
+            // Add click event to both toggle and display for Wiki path
             if (wikiPathToggle) wikiPathToggle.addEventListener('click', toggleWikiPathInput);
             if (wikiPathDisplay) wikiPathDisplay.addEventListener('click', toggleWikiPathInput);
 
             // Update Wiki path display when input changes
-            if (defaultFolder) {            // Open directory browser modal            // Open directory browser modal
+            if (defaultFolder) {
                 defaultFolder.addEventListener('input', function() {
-                    // Auto-sanitize path on inputn() {n() {
-                    const sanitizedValue = sanitizeWikiPath(this.value);wserModal.style.display = 'block';wserModal.style.display = 'block';
+                    // Auto-sanitize path on input
+                    const sanitizedValue = sanitizeWikiPath(this.value);
                     if (sanitizedValue !== this.value) {
                         this.value = sanitizedValue;
                     }
@@ -930,39 +881,39 @@ tion(e) {tion(e) {
                         wikiPathDisplay.textContent = this.value || 'DocFlow';
                     }
                 });
-            }            if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);            if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-elDirectoryBtn.addEventListener('click', closeModal);elDirectoryBtn.addEventListener('click', closeModal);
+            }
+
             // Open directory browser modal
-            if (browseFoldersBtn) {ideide
-                browseFoldersBtn.addEventListener('click', function() {            window.addEventListener('click', function(event) {            window.addEventListener('click', function(event) {
-                    directoryBrowserModal.style.display = 'block';oryBrowserModal) {oryBrowserModal) {
+            if (browseFoldersBtn) {
+                browseFoldersBtn.addEventListener('click', function() {
+                    directoryBrowserModal.style.display = 'block';
                     loadDirectories();
                 });
             }
 
             // Close modal functions
             function closeModal() {
-                directoryBrowserModal.style.display = 'none';dingDirectories.style.display = 'block';dingDirectories.style.display = 'block';
-            };;
-                directoryTree.innerHTML = '';                directoryTree.innerHTML = '';
-            if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-            if (cancelDirectoryBtn) cancelDirectoryBtn.addEventListener('click', closeModal);es')es')
+                directoryBrowserModal.style.display = 'none';
+            }
 
-            // Close modal when clicking outside                    .then(data => {                    .then(data => {
-            window.addEventListener('click', function(event) {display = 'none';display = 'none';
+            if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+            if (cancelDirectoryBtn) cancelDirectoryBtn.addEventListener('click', closeModal);
+
+            // Close modal when clicking outside
+            window.addEventListener('click', function(event) {
                 if (event.target === directoryBrowserModal) {
                     closeModal();
                 }
             });
 
-            // Fetch Wiki.js directoriesnerHTML = `<div class="error">${data.message}</div>`;nerHTML = `<div class="error">${data.message}</div>`;
+            // Fetch Wiki.js directories
             function loadDirectories() {
                 loadingDirectories.style.display = 'block';
-                directoryTree.style.display = 'none';tch(error => {tch(error => {
-                directoryTree.innerHTML = '';play = 'none';play = 'none';
-     directoryTree.style.display = 'block';     directoryTree.style.display = 'block';
-                fetch('/get_wikijs_directories')           directoryTree.innerHTML = `<div class="error">Fehler beim Laden der Verzeichnisse: ${error}</div>`;           directoryTree.innerHTML = `<div class="error">Fehler beim Laden der Verzeichnisse: ${error}</div>`;
-                    .then(response => response.json())                    });                    });
+                directoryTree.style.display = 'none';
+                directoryTree.innerHTML = '';
+
+                fetch('/get_wikijs_directories')
+                    .then(response => response.json())
                     .then(data => {
                         loadingDirectories.style.display = 'none';
                         directoryTree.style.display = 'block';
@@ -970,12 +921,12 @@ elDirectoryBtn.addEventListener('click', closeModal);elDirectoryBtn.addEventList
                         if (data.success) {
                             renderDirectoryTree(data.directories);
                         } else {
-                            directoryTree.innerHTML = `<div class="error">${data.message}</div>`;ement('div');ement('div');
-                        }ctory-level-0';ctory-level-0';
-                    })   rootItem.textContent = '/ (Root)';   rootItem.textContent = '/ (Root)';
-                    .catch(error => {                rootItem.dataset.path = '';                rootItem.dataset.path = '';
-                        loadingDirectories.style.display = 'none';('click', function() {('click', function() {
-                        directoryTree.style.display = 'block';his);his);
+                            directoryTree.innerHTML = `<div class="error">${data.message}</div>`;
+                        }
+                    })
+                    .catch(error => {
+                        loadingDirectories.style.display = 'none';
+                        directoryTree.style.display = 'block';
                         directoryTree.innerHTML = `<div class="error">Fehler beim Laden der Verzeichnisse: ${error}</div>`;
                     });
             }
@@ -983,119 +934,33 @@ elDirectoryBtn.addEventListener('click', closeModal);elDirectoryBtn.addEventList
             // Render the directory tree
             function renderDirectoryTree(directories) {
                 directoryTree.innerHTML = '';
-.split('/');.split('/');
-                // Add root directory firstvel = Math.min(parts.length, 5); // Limit nesting level to 5vel = Math.min(parts.length, 5); // Limit nesting level to 5
+
+                // Add root directory first
                 const rootItem = document.createElement('div');
-                rootItem.className = 'directory-item directory-level-0';onst item = document.createElement('div');onst item = document.createElement('div');
-                rootItem.textContent = '/ (Root)'; item.className = `directory-item directory-level-${level}`; item.className = `directory-item directory-level-${level}`;
-                rootItem.dataset.path = '';       item.textContent = parts[parts.length - 1] || dir;       item.textContent = parts[parts.length - 1] || dir;
-                rootItem.addEventListener('click', function() {         item.dataset.path = dir;         item.dataset.path = dir;
-                    selectDirectory(this);       item.addEventListener('click', function() {       item.addEventListener('click', function() {
-                });                 selectDirectory(this);                 selectDirectory(this);
-                directoryTree.appendChild(rootItem);             });             });
-                    directoryTree.appendChild(item);                    directoryTree.appendChild(item);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</html></body>    </script>        });            });                }                    formatsModal.style.display = 'none';                if (event.target === formatsModal) {            window.addEventListener('click', function(event) {            // Close formats modal when clicking outside            });                formatsModal.style.display = 'none';            closeFormatsModal.addEventListener('click', function() {            // Close formats modal            });                formatsModal.style.display = 'block';            helpFormatsButton.addEventListener('click', function() {            // Help formats button click handler            }
-
-                });                    }                        alert('Bitte wählen Sie ein Verzeichnis aus.');                    } else {                        closeModal();                        }                            wikiPathDisplay.textContent = selectedDirectory || 'DocFlow';                        if (wikiPathDisplay) {                        // Update the Wiki path display                        defaultFolder.value = selectedDirectory;                    if (selectedDirectory !== null && defaultFolder) {                selectDirectoryBtn.addEventListener('click', function() {            if (selectDirectoryBtn) {            // Handle select button click            }                selectedDirectory = element.dataset.path;                element.classList.add('selected');                // Add selected class to clicked item                items.forEach(item => item.classList.remove('selected'));                const items = directoryTree.querySelectorAll('.directory-item');                // Remove selected class from all items            function selectDirectory(element) {            // Handle directory selection            }                });                    directoryTree.appendChild(item);                    });                        selectDirectory(this);                    item.addEventListener('click', function() {                    item.dataset.path = dir;                    item.textContent = parts[parts.length - 1] || dir;                    item.className = `directory-item directory-level-${level}`;                    const item = document.createElement('div');                    const level = Math.min(parts.length, 5); // Limit nesting level to 5                    const parts = dir.split('/');                    if (dir === '') return; // Skip root as it's already added                directories.forEach(dir => {                // Add all other directories
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</html></body>    </script>        });            }                });                    }                        alert('Bitte wählen Sie ein Verzeichnis aus.');                    } else {                        closeModal();                        }                            wikiPathDisplay.textContent = selectedDirectory || 'DocFlow';                        if (wikiPathDisplay) {                        // Update the Wiki path display                        defaultFolder.value = selectedDirectory;                    if (selectedDirectory !== null && defaultFolder) {                selectDirectoryBtn.addEventListener('click', function() {            if (selectDirectoryBtn) {            // Handle select button click            }                selectedDirectory = element.dataset.path;                element.classList.add('selected');                // Add selected class to clicked item                items.forEach(item => item.classList.remove('selected'));                const items = directoryTree.querySelectorAll('.directory-item');                // Remove selected class from all items            function selectDirectory(element) {            // Handle directory selection            }                });                });
+                rootItem.className = 'directory-item directory-level-0';
+                rootItem.textContent = '/ (Root)';
+                rootItem.dataset.path = '';
+                rootItem.addEventListener('click', function() {
+                    selectDirectory(this);
+                });
+                directoryTree.appendChild(rootItem);
+
+                // Add all other directories
+                directories.forEach(dir => {
+                    if (dir === '') return; // Skip root as it's already added
+
+                    const parts = dir.split('/');
+                    const level = Math.min(parts.length, 5); // Limit nesting level to 5
+
+                    const item = document.createElement('div');
+                    item.className = `directory-item directory-level-${level}`;
+                    item.textContent = parts[parts.length - 1] || dir;
+                    item.dataset.path = dir;
+                    item.addEventListener('click', function() {
+                        selectDirectory(this);
+                    });
+                    directoryTree.appendChild(item);
+                });
             }
 
             // Handle directory selection
