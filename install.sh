@@ -34,6 +34,7 @@ INSTALL_DIR="/opt/tresorhaus-docflow"
 VENV_DIR="$INSTALL_DIR/venv"
 SERVICE_NAME="tresorhaus-docflow"
 SERVICE_USER="docflow"
+TEMPLATES_DIR="$INSTALL_DIR/templates"
 
 # Wiki.js Konfiguration abfragen
 read -p "Wiki.js URL eingeben (z.B. http://wiki.example.com): " WIKIJS_URL
@@ -74,11 +75,20 @@ fi
 log "Erstelle Installationsverzeichnis..."
 mkdir -p $INSTALL_DIR
 mkdir -p $INSTALL_DIR/static
+mkdir -p $TEMPLATES_DIR
 
 # Kopiere Anwendungsdateien
 log "Kopiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
 cp -r static/* $INSTALL_DIR/static/
+
+# Kopiere Template-Dateien, falls vorhanden
+log "Kopiere Template-Dateien..."
+if [ -d "templates" ]; then
+    cp -r templates/* $TEMPLATES_DIR/
+else
+    warning "Keine Template-Dateien gefunden. Erstelle leeres Template-Verzeichnis."
+fi
 
 # Erstelle .env Datei
 log "Erstelle .env Datei..."
@@ -112,6 +122,7 @@ log "Setze Berechtigungen..."
 chown -R $SERVICE_USER:$SERVICE_USER $INSTALL_DIR
 chmod -R 755 $INSTALL_DIR
 chmod 600 $INSTALL_DIR/.env
+chmod -R 755 $TEMPLATES_DIR
 
 # SystemD Service erstellen
 log "Erstelle SystemD Service..."
@@ -145,6 +156,7 @@ echo -e "Service-Name: $SERVICE_NAME"
 echo -e "Service-Benutzer: $SERVICE_USER"
 echo -e "Web-Interface: http://localhost:5000"
 echo -e "Wiki.js URL: $WIKIJS_URL"
+echo -e "Templates-Verzeichnis: $TEMPLATES_DIR"
 echo -e "\nBefehle für die Verwaltung:"
 echo -e "  Status anzeigen:    sudo systemctl status $SERVICE_NAME"
 echo -e "  Service neustarten: sudo systemctl restart $SERVICE_NAME"

@@ -34,6 +34,7 @@ INSTALL_DIR="/opt/tresorhaus-docflow"
 VENV_DIR="$INSTALL_DIR/venv"
 SERVICE_NAME="tresorhaus-docflow"
 BACKUP_DIR="/opt/tresorhaus-docflow-backup-$(date +%Y%m%d_%H%M%S)"
+TEMPLATES_DIR="$INSTALL_DIR/templates"
 
 # Wiki.js Konfiguration aktualisieren?
 read -p "Wiki.js Konfiguration aktualisieren? (j/n): " UPDATE_WIKIJS
@@ -56,6 +57,17 @@ systemctl stop $SERVICE_NAME
 log "Aktualisiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
 cp -r static/* $INSTALL_DIR/static/
+
+# Aktualisiere Template-Dateien
+log "Aktualisiere Template-Dateien..."
+if [ -d "templates" ]; then
+    # Stelle sicher, dass das Zielverzeichnis existiert
+    mkdir -p $TEMPLATES_DIR
+    cp -r templates/* $TEMPLATES_DIR/
+    log "Templates aktualisiert."
+else
+    warning "Keine Template-Dateien im Quellverzeichnis gefunden."
+fi
 
 # Aktualisiere Wiki.js Konfiguration wenn gewünscht
 if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
@@ -88,6 +100,7 @@ log "Aktualisiere Berechtigungen..."
 chown -R docflow:docflow $INSTALL_DIR
 chmod -R 755 $INSTALL_DIR
 chmod 600 $INSTALL_DIR/.env
+chmod -R 755 $TEMPLATES_DIR
 
 # Service neustarten
 log "Starte Service neu..."
