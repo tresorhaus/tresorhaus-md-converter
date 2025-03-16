@@ -295,6 +295,33 @@
         .directory-level-3 { margin-left: 60px; }
         .directory-level-4 { margin-left: 80px; }
         .directory-level-5 { margin-left: 100px; }
+
+        /* Path toggle styles */
+        .path-toggle {
+            cursor: pointer;
+            color: #3498db;
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 0.9em;
+        }
+        .path-toggle:hover {
+            text-decoration: underline;
+        }
+        .path-display {
+            background-color: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 5px 0;
+            display: block;
+            width: 100%;
+            color: #495057;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .path-input-container {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -589,6 +616,14 @@
                         // Sanitize the title correctly
                         const sanitizedTitle = sanitizeWikiTitle(fileNameWithoutExt);
 
+                        // Generate default path
+                        const currentDate = new Date();
+                        const datePart = currentDate.toISOString().split('T')[0];
+                        const timePart = `${currentDate.getHours()}${currentDate.getMinutes()}`;
+                        const defaultFolderValue = defaultFolder ? defaultFolder.value : '';
+                        const username = usernameHidden.value || 'Benutzer';
+                        const defaultPath = `${defaultFolderValue || 'DocFlow'}/${username}/${datePart}-${timePart}`;
+
                         const fileDetail = document.createElement('div');
                         fileDetail.className = 'file-detail';
                         fileDetail.style.display = 'block';
@@ -599,17 +634,36 @@
                                 <input type="hidden" id="wiki_title_hidden_${i}" name="wiki_title_${i}" value="${sanitizedTitle}">
                             </div>
                             <div>
-                                <label for="wiki_path_${i}">Wiki.js Pfad:</label>
-                                <input type="text" id="wiki_path_${i}" name="wiki_path_${i}"
-                                       placeholder="z.B. ${defaultFolder ? defaultFolder.value : 'DocFlow'}/${usernameHidden.value || 'Benutzer'}/${new Date().toISOString().split('T')[0]}-${new Date().getHours()}${new Date().getMinutes()}">
-                                <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
+                                <label for="wiki_path_display_${i}">Wiki.js Pfad: <span class="path-toggle" id="path_toggle_${i}">[Bearbeiten]</span></label>
+                                <div class="path-display" id="wiki_path_display_${i}">${defaultPath}</div>
+                                <div class="path-input-container" id="path_input_container_${i}">
+                                    <input type="text" id="wiki_path_${i}" name="wiki_path_${i}" value="${defaultPath}"
+                                           placeholder="z.B. ${defaultPath}">
+                                    <div class="input-help">Erlaubt: Buchstaben, Zahlen, Bindestriche, Unterstriche, Schrägstriche</div>
+                                </div>
                             </div>
                         `;
 
                         wikiFileSettings.appendChild(fileDetail);
 
-                        // Add event listeners for real-time sanitization
+                        // Add event listeners for the path display and toggle
+                        const pathToggle = document.getElementById(`path_toggle_${i}`);
+                        const pathDisplay = document.getElementById(`wiki_path_display_${i}`);
+                        const pathInputContainer = document.getElementById(`path_input_container_${i}`);
                         const pathInput = document.getElementById(`wiki_path_${i}`);
+
+                        // Function to toggle path input visibility
+                        function togglePathInput() {
+                            const isVisible = pathInputContainer.style.display === 'block';
+                            pathInputContainer.style.display = isVisible ? 'none' : 'block';
+                            pathToggle.textContent = isVisible ? '[Bearbeiten]' : '[Schließen]';
+                        }
+
+                        // Add click event to both toggle and display
+                        pathToggle.addEventListener('click', togglePathInput);
+                        pathDisplay.addEventListener('click', togglePathInput);
+
+                        // Update display when input changes
                         pathInput.addEventListener('input', function() {
                             // Store original value for comparison
                             const originalValue = this.value;
@@ -619,6 +673,9 @@
                             if (sanitizedValue !== originalValue) {
                                 this.value = sanitizedValue;
                             }
+
+                            // Update the display
+                            pathDisplay.textContent = this.value;
 
                             validateWikiInput(this);
                         });
