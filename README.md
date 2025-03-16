@@ -1,3 +1,4 @@
+```markdown
 # TresorHaus DocFlow
 
 <p align="center">
@@ -5,6 +6,9 @@
 </p>
 
 TresorHaus DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentformate automatisch in Markdown umwandelt. Die Anwendung wurde entwickelt, um die Dokumentenverarbeitung zu optimieren und zu vereinfachen.
+
+## Author
+Entwickelt von Joachim Mild für TresorHaus GmbH
 
 ## 🚀 Features
 
@@ -29,11 +33,11 @@ TresorHaus DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschieden
 
 ### Voraussetzungen
 
-- Python 3.8 oder höher
-- pip (Python Package Manager)
-- Pandoc (Dokumentenkonverter)
+- Debian 12
+- Sudo-Rechte
+- Internetverbindung
 
-### Schritt-für-Schritt Installation
+### Automatische Installation
 
 1. **Repository klonen:**
    ```bash
@@ -41,47 +45,67 @@ TresorHaus DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschieden
    cd tresorhaus-docflow
    ```
 
-2. **Python-Umgebung einrichten (optional, aber empfohlen):**
+2. **Installationsskript ausführen:**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # Unter Linux/Mac
-   # oder
-   .\venv\Scripts\activate  # Unter Windows
+   chmod +x install.sh
+   sudo ./install.sh
    ```
 
-3. **Abhängigkeiten installieren:**
+### Manuelle Installation
+
+1. **Python-Umgebung einrichten:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+2. **Abhängigkeiten installieren:**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Pandoc installieren:**
-   - Linux (Debian/Ubuntu):
-     ```bash
-     sudo apt-get install pandoc
-     ```
-   - macOS:
-     ```bash
-     brew install pandoc
-     ```
-   - Windows:
-     - Besuchen Sie [pandoc.org/installing.html](https://pandoc.org/installing.html)
-     - Laden Sie den Installer herunter und führen Sie ihn aus
+3. **Pandoc installieren:**
+   ```bash
+   sudo apt-get install pandoc
+   ```
+
+## 🔄 Update
+
+Um die Anwendung zu aktualisieren:
+
+```bash
+sudo ./update.sh
+```
+
+## 🗑 Deinstallation
+
+Um die Anwendung zu entfernen:
+
+```bash
+sudo ./uninstall.sh
+```
 
 ## 🚦 Verwendung
 
-1. **Server starten:**
-   ```bash
-   python app.py
-   ```
+### Als Service
+Nach der Installation ist die Anwendung automatisch als Service eingerichtet und unter `http://localhost:5000` erreichbar.
 
-2. **Zugriff auf die Anwendung:**
-   - Öffnen Sie einen Webbrowser
-   - Navigieren Sie zu `http://localhost:5000`
+### Service-Verwaltung
+```bash
+# Status anzeigen
+sudo systemctl status tresorhaus-docflow
 
-3. **Dokumente konvertieren:**
-   - Wählen Sie eine oder mehrere Dateien aus
-   - Klicken Sie auf "Konvertieren"
-   - Laden Sie die konvertierten Markdown-Dateien herunter
+# Service neustarten
+sudo systemctl restart tresorhaus-docflow
+
+# Logs anzeigen
+sudo journalctl -u tresorhaus-docflow -f
+```
+
+### Manuelle Ausführung
+```bash
+python app.py
+```
 
 ## 🔧 Konfiguration
 
@@ -91,44 +115,58 @@ Die Anwendung kann über verschiedene Umgebungsvariablen konfiguriert werden:
 - `HOST`: Host-Adresse (Standard: 0.0.0.0)
 - `DEBUG`: Debug-Modus (Standard: True)
 
+## 📁 Projektstruktur
+```
+tresorhaus-docflow/
+├── app.py                 # Hauptanwendung
+├── requirements.txt       # Python-Abhängigkeiten
+├── install.sh            # Installationsskript
+├── update.sh             # Update-Skript
+├── uninstall.sh          # Deinstallationsskript
+├── README.md             # Dokumentation
+├── static/               # Statische Dateien
+│   └── tresorhaus-logo.png
+└── LICENSE               # Lizenzinformationen
+```
+
 ## 🔍 Fehlerbehebung
 
 ### Häufige Probleme und Lösungen
 
-1. **Pandoc nicht gefunden:**
-   - Stellen Sie sicher, dass Pandoc installiert ist
-   - Überprüfen Sie, ob Pandoc im System-PATH verfügbar ist
+1. **Service startet nicht:**
+   ```bash
+   sudo journalctl -u tresorhaus-docflow -n 50
+   ```
 
-2. **Dateien werden nicht konvertiert:**
+2. **Konvertierung schlägt fehl:**
+   - Überprüfen Sie die Pandoc-Installation
    - Überprüfen Sie die Dateiberechtigungen
-   - Stellen Sie sicher, dass das Format unterstützt wird
 
-3. **Server startet nicht:**
-   - Überprüfen Sie, ob der Port bereits belegt ist
-   - Stellen Sie sicher, dass alle Abhängigkeiten installiert sind
+3. **Webinterface nicht erreichbar:**
+   - Überprüfen Sie die Firewall-Einstellungen
+   - Überprüfen Sie den Service-Status
 
-## 🤝 Beitragen
+## 📮 Support
 
-Wir freuen uns über Beiträge! So können Sie helfen:
-
-1. Fork des Repositories erstellen
-2. Feature-Branch erstellen (`git checkout -b feature/AmazingFeature`)
-3. Änderungen committen (`git commit -m 'Add some AmazingFeature'`)
-4. Branch pushen (`git push origin feature/AmazingFeature`)
-5. Pull Request erstellen
+Bei Problemen oder Fragen:
+1. Erstellen Sie ein Issue im GitHub Repository
+2. Kontaktieren Sie den Support unter [support@tresorhaus.de](mailto:support@tresorhaus.de)
 
 ## 📝 Lizenz
 
 Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe die [LICENSE](LICENSE) Datei für Details.
 
-## 📮 Kontakt
-
-TresorHaus GmbH - [Website](https://www.tresorhaus.de)
-
-Projektlink: [https://github.com/tresorhaus/tresorhaus-docflow](https://github.com/tresorhaus/tresorhaus-docflow)
-
 ---
 
 <p align="center">
-  Entwickelt mit ❤️ von Joachim Mild für das TresorHaus GmbH
+  Entwickelt mit ❤️ von Joachim Mild für TresorHaus
 </p>
+```
+
+Aktualisierung im Template (füge dies am Ende beider Templates vor `</body>` ein):
+```html
+    <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.9em; border-top: 1px solid #eee;">
+        Entwickelt von Joachim Mild für TresorHaus GmbH © 2024
+    </div>
+</body>
+```
