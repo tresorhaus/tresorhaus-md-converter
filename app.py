@@ -692,34 +692,74 @@ def test_wikijs_connection():
     if not WIKIJS_URL or not WIKIJS_TOKEN:
         return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert'}
 
-    test_query = """
-    query {
-        pages {
-            list {
-                totalCount
+    # Test connection in steps for better diagnosis
+    try:
+        # 1. Test basic connection
+        base_response = requests.get(WIKIJS_URL)
+        base_response.raise_for_status()
+
+        # 2. Test GraphQL endpoint with minimal query
+        test_query = """
+        query {
+            authentication {
+                login
             }
         }
-    }
-    """
+        """
 
-    try:
+        headers = {
+            'Authorization': f'Bearer {WIKIJS_TOKEN}',
+            'Content-Type': 'application/json'
+        }
+
         response = requests.post(
             f'{WIKIJS_URL}/graphql',
-            headers={
-                'Authorization': f'Bearer {WIKIJS_TOKEN}',
-                'Content-Type': 'application/json'
-            },
+            headers=headers,
             json={'query': test_query}
         )
+
+        # Print detailed debug info
+        print(f"Status Code: {response.status_code}")
+        print(f"Response Headers: {response.headers}")
+        print(f"Response Content: {response.text}")
+
         response.raise_for_status()
         data = response.json()
 
         if 'errors' in data:
-            return {'success': False, 'message': f"API-Fehler: {data['errors'][0]['message']}"}
+            error_msg = data['errors'][0].get('message', 'Unbekannter GraphQL-Fehler')
+            return {
+                'success': False,
+                'message': f"API-Fehler: {error_msg}\nBitte überprüfen Sie den API-Token."
+            }
 
         return {'success': True, 'message': 'Verbindung zu Wiki.js erfolgreich hergestellt!'}
+
+    except requests.exceptions.ConnectionError:
+        return {
+            'success': False,
+            'message': f'Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}'
+        }
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            return {
+                'success': False,
+                'message': 'Authentifizierungsfehler: Ungültiger API-Token'
+            }
+        elif e.response.status_code == 400:
+            return {
+                'success': False,
+                'message': 'API-Fehler: Ungültige Anfrage. Bitte überprüfen Sie die Wiki.js-URL und den API-Token'
+            }
+        return {
+            'success': False,
+            'message': f'HTTP-Fehler {e.response.status_code}: {e.response.text}'
+        }
     except Exception as e:
-        return {'success': False, 'message': f'Verbindungsfehler: {str(e)}'}
+        return {
+            'success': False,
+            'message': f'Unerwarteter Fehler: {str(e)}\nBitte überprüfen Sie die Konsole für weitere Details.'
+        }
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
