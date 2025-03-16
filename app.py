@@ -106,7 +106,7 @@ def log_debug(message, log_type='info'):
     })
     print(f"[{timestamp}] {log_type.upper()}: {message}")
 
-def upload_to_wikijs(content, title, session_id):
+def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=None):
     """Lädt eine Markdown-Datei in Wiki.js hoch"""
     if not WIKIJS_URL or not WIKIJS_TOKEN:
         log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
@@ -119,8 +119,17 @@ def upload_to_wikijs(content, title, session_id):
     if title.lower().endswith('.md'):
         title_without_extension = title[:-3]
 
-    # Verwende den Titel ohne .md Erweiterung im Pfad
-    path = f"DocFlow/{session_id}_{timestamp}/{title_without_extension}"
+    # Verwende den benutzerdefinierten Titel, wenn angegeben
+    if custom_title and custom_title.strip():
+        title_without_extension = custom_title.strip()
+
+    # Verwende den benutzerdefinierten Pfad, wenn angegeben, sonst den Standard-Pfad
+    if custom_path and custom_path.strip():
+        # Entferne führende und folgende Schrägstriche für Konsistenz
+        cleaned_path = custom_path.strip().strip('/')
+        path = cleaned_path
+    else:
+        path = f"DocFlow/{session_id}_{timestamp}/{title_without_extension}"
 
     log_debug(f"Starte Upload zu Wiki.js: {title_without_extension}", "api")
     log_debug(f"Ziel-Pfad: {path}", "api")
@@ -262,7 +271,7 @@ def convert_to_markdown(input_path, output_path):
         print(f"Fehler bei der Konvertierung von {input_path}: {e}")
         return False
 
-def process_uploads(files, session_id, upload_to_wiki=False):
+def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wiki_titles=None):
     """Verarbeitet hochgeladene Dateien und konvertiert sie zu Markdown"""
     global debug_logs
     debug_logs = []  # Zurücksetzen der Debug-Logs für jede neue Sitzung
@@ -272,6 +281,12 @@ def process_uploads(files, session_id, upload_to_wiki=False):
 
     log_debug(f"Neue Upload-Verarbeitung gestartet. Session ID: {session_id}")
     log_debug(f"Wiki.js-Upload aktiviert: {'Ja' if upload_to_wiki else 'Nein'}")
+
+    # Sicherstellen, dass wiki_paths und wiki_titles Dictionaries sind
+    if wiki_paths is None:
+        wiki_paths = {}
+    if wiki_titles is None:
+        wiki_titles = {}
 
     # Create directories if they don't exist
     if not os.path.exists(upload_dir):
@@ -287,7 +302,7 @@ def process_uploads(files, session_id, upload_to_wiki=False):
 
     log_debug(f"{len(files)} Datei(en) für die Verarbeitung empfangen")
 
-    for file in files:
+    for i, file in enumerate(files):
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             log_debug(f"Verarbeite Datei: {filename}")
@@ -310,7 +325,22 @@ def process_uploads(files, session_id, upload_to_wiki=False):
                         with open(output_path, 'r', encoding='utf-8') as md_file:
                             content = md_file.read()
                             log_debug(f"Markdown-Datei gelesen: {len(content)} Zeichen", "api")
-                            success, wiki_url = upload_to_wikijs(content, output_filename, session_id)
+
+                            # Hole benutzerdefinierte Pfad und Titel für diese Datei
+                            custom_path = wiki_paths.get(f"path_{i}", "")
+                            custom_title = wiki_titles.get(f"title_{i}", "")
+
+                            log_debug(f"Benutzerdefinierter Pfad: {custom_path}", "info")
+                            log_debug(f"Benutzerdefinierter Titel: {custom_title}", "info")
+
+                            success, wiki_url = upload_to_wikijs(
+                                content,
+                                output_filename,
+                                session_id,
+                                custom_path=custom_path,
+                                custom_title=custom_title
+                            )
+
                             if success:
                                 wiki_urls[output_filename] = wiki_url
                                 log_debug(f"Wiki.js Upload erfolgreich: {wiki_url}", "success")
@@ -370,7 +400,26 @@ def index():
             return redirect(request.url)
 
         session_id = str(uuid.uuid4())
-        converted_files, failed_files, wiki_urls = process_uploads(files, session_id, upload_to_wiki)
+
+        # Sammle benutzerdefinierte Wiki.js Pfade und Titel
+        wiki_paths = {}
+        wiki_titles = {}
+
+        for key, value in request.form.items():
+            if key.startswith('wiki_path_'):
+                index = key.replace('wiki_path_', '')
+                wiki_paths[f"path_{index}"] = value
+            elif key.startswith('wiki_title_'):
+                index = key.replace('wiki_title_', '')
+                wiki_titles[f"title_{index}"] = value
+
+        converted_files, failed_files, wiki_urls = process_uploads(
+            files,
+            session_id,
+            upload_to_wiki,
+            wiki_paths=wiki_paths,
+            wiki_titles=wiki_titles
+        )
 
         if not converted_files and not failed_files:
             flash('Keine gültigen Dateien zum Konvertieren gefunden')

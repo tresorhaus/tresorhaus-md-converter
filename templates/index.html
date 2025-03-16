@@ -1,294 +1,238 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TresorHaus DocFlow - Dokumentenkonverter</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: 'Arial', sans-serif;
             line-height: 1.6;
+            margin: 0;
+            padding: 20px;
             background-color: #f5f5f5;
-        }
-        .logo-container {
-            text-align: center;
-            margin: 20px 0;
-        }
-        .logo {
-            max-width: 300px;
-            height: auto;
-            margin: 0 auto;
-        }
-        .app-title {
-            text-align: center;
-            color: #C4A962;
-            margin: 20px 0;
-            font-size: 2em;
-            font-weight: bold;
-        }
-        .app-subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.2em;
+            color: #333;
         }
         .container {
-            border: 1px solid #ddd;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
             padding: 20px;
             border-radius: 8px;
-            background-color: #fff;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .form-group {
-            margin-bottom: 20px;
+        h1, h2 {
+            color: #2c3e50;
         }
-        .btn {
-            background-color: #C4A962;
+        h1 {
+            margin-top: 0;
+            text-align: center;
+            color: #3498db;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="file"] {
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            width: 100%;
+        }
+        button {
+            background-color: #3498db;
             color: white;
-            padding: 12px 20px;
             border: none;
+            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s;
         }
-        .btn:hover {
-            background-color: #B39855;
+        button:hover {
+            background-color: #2980b9;
         }
-        .flash-messages {
-            color: #d9534f;
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-        }
-        .format-info {
-            background-color: #e7f3fe;
-            border-left: 6px solid #2196F3;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .format-list {
-            columns: 3;
-            -webkit-columns: 3;
-            -moz-columns: 3;
-            list-style-type: none;
-            padding-left: 0;
-            margin-top: 10px;
-        }
-        .format-list li {
-            margin-bottom: 8px;
-            color: #555;
-        }
-        input[type="file"] {
-            padding: 10px;
-            border: 2px dashed #C4A962;
-            border-radius: 4px;
-            width: 100%;
-            margin-top: 5px;
-        }
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .checkbox-container input[type="checkbox"] {
-            margin-right: 10px;
-        }
-        .author-info {
-            text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            color: #666;
-            font-size: 0.9em;
-            border-top: 1px solid #eee;
-        }
-        .debug-container {
-            margin-top: 20px;
+        .file-info {
+            margin-top: 15px;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            background-color: #f8f9fa;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
+            background-color: #f9f9f9;
         }
-        .debug-container h4 {
-            margin-top: 0;
-            color: #333;
+        .wiki-options {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
         }
-        .debug-log {
-            margin: 0;
-            padding: 0;
-            list-style-type: none;
+        .file-detail {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #fff;
+            display: none;
         }
-        .debug-log li {
-            margin-bottom: 5px;
-            padding: 3px 0;
-            border-bottom: 1px dotted #eee;
-        }
-        .debug-toggle {
-            background-color: #f1f1f1;
-            border: none;
-            color: #666;
-            padding: 5px 10px;
+        .logo {
             text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 12px;
-            margin: 4px 2px;
-            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .logo img {
+            max-width: 250px;
+            height: auto;
+        }
+        .checkbox-container {
+            margin: 15px 0;
+        }
+        .hidden {
+            display: none;
+        }
+        .file-detail input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
             border-radius: 4px;
-        }
-        .btn-secondary {
-            background-color: #666;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        }
-        .btn-secondary:hover {
-            background-color: #555;
-        }
-        #api-test-result {
-            display: inline-block;
-            font-size: 14px;
-            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="logo-container">
-        <img src="{{ url_for('static', filename='tresorhaus-logo.png') }}" alt="TresorHaus Logo" class="logo">
-    </div>
-
-    <div class="app-title">TresorHaus DocFlow</div>
-    <div class="app-subtitle">Dokumentenkonverter</div>
-
     <div class="container">
-        <div class="format-info">
-            <h3>Unterstützte Dateiformate:</h3>
-            <ul class="format-list">
-                <li>.doc, .docx (Word)</li>
-                <li>.odt (OpenOffice/LibreOffice)</li>
-                <li>.rtf (Rich Text Format)</li>
-                <li>.tex (LaTeX)</li>
-                <li>.html, .htm (HTML)</li>
-                <li>.epub (E-Book)</li>
-                <li>.ppt, .pptx (PowerPoint)</li>
-                <li>.odp (Impress)</li>
-                <li>.rst (reStructuredText)</li>
-                <li>.textile (Textile)</li>
-                <li>.wiki (MediaWiki)</li>
-                <li>.dbk, .xml (DocBook)</li>
-                <li>.adoc, .asciidoc (AsciiDoc)</li>
-                <li>.org (Org-mode)</li>
-            </ul>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="TresorHaus Logo">
         </div>
+        <h1>TresorHaus DocFlow</h1>
+        <p>Konvertieren Sie Ihre Dokumente nach Markdown und laden Sie sie optional direkt in Ihr Wiki.js hoch.</p>
 
-        {% if get_flashed_messages() %}
-        <div class="flash-messages">
-            {% for message in get_flashed_messages() %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        </div>
-        {% endif %}
+        <form action="/" method="post" enctype="multipart/form-data" id="uploadForm">
+            <label for="file">Dateien auswählen:</label>
+            <input type="file" id="file" name="files" multiple>
 
-        <form method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="files">Wähle Dateien zum Konvertieren aus:</label>
-                <input type="file" name="files" id="files" multiple>
+            <div id="fileList" class="file-info">
+                <p>Keine Dateien ausgewählt</p>
             </div>
+
             <div class="checkbox-container">
-                <input type="checkbox" name="upload_to_wiki" id="upload_to_wiki" value="1">
-                <label for="upload_to_wiki">In Wiki.js hochladen</label>
-                <button type="button" id="test-api" class="btn-secondary" style="margin-left: 10px;">API-Verbindung testen</button>
-                <span id="api-test-result" style="margin-left: 10px;"></span>
+                <input type="checkbox" id="wikiUpload" name="upload_to_wiki">
+                <label for="wikiUpload">Direkt in Wiki.js hochladen</label>
             </div>
-            <div class="form-group">
-                <button type="submit" class="btn">Konvertieren</button>
+
+            <div id="wikiOptions" class="wiki-options hidden">
+                <h3>Wiki.js Einstellungen</h3>
+                <p>Definieren Sie für jede Datei, wo und wie sie in Wiki.js hochgeladen werden soll.</p>
+                <div id="wikiFileSettings"></div>
+            </div>
+
+            <div class="actions">
+                <button type="button" id="testWikiButton">Wiki.js Verbindung testen</button>
+                <button type="submit">Konvertieren</button>
             </div>
         </form>
+    </div>
 
-        <button id="debug-toggle" class="debug-toggle">Debug-Informationen anzeigen</button>
-        <div id="debug-container" class="debug-container" style="display: none;">
-            <h4>Debug-Log</h4>
-            <ul id="debug-log" class="debug-log"></ul>
-        </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('file');
+            const fileList = document.getElementById('fileList');
+            const wikiUpload = document.getElementById('wikiUpload');
+            const wikiOptions = document.getElementById('wikiOptions');
+            const wikiFileSettings = document.getElementById('wikiFileSettings');
+            const testWikiButton = document.getElementById('testWikiButton');
 
-        <script>
-        // API-Test Funktionalität
-        document.getElementById('test-api').addEventListener('click', async () => {
-            const resultSpan = document.getElementById('api-test-result');
-            const debugLog = document.getElementById('debug-log');
+            // File input change handler
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    let filesHtml = '<h3>Ausgewählte Dateien:</h3><ul>';
 
-            resultSpan.textContent = 'Teste Verbindung...';
-            resultSpan.style.color = 'gray';
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        const file = fileInput.files[i];
+                        filesHtml += `<li>${file.name} (${(file.size / 1024).toFixed(2)} KB)</li>`;
+                    }
 
-            // Log debug info
-            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Starte API-Verbindungstest...</li>`;
+                    filesHtml += '</ul>';
+                    fileList.innerHTML = filesHtml;
 
-            try {
-                const response = await fetch('/test_wikijs_connection', {
+                    // Update Wiki.js settings if the checkbox is checked
+                    if (wikiUpload.checked) {
+                        updateWikiSettings();
+                    }
+                } else {
+                    fileList.innerHTML = '<p>Keine Dateien ausgewählt</p>';
+                    wikiFileSettings.innerHTML = '';
+                }
+            });
+
+            // Wiki.js upload checkbox change handler
+            wikiUpload.addEventListener('change', function() {
+                if (this.checked) {
+                    wikiOptions.classList.remove('hidden');
+                    updateWikiSettings();
+                } else {
+                    wikiOptions.classList.add('hidden');
+                }
+            });
+
+            // Function to update Wiki.js settings based on selected files
+            function updateWikiSettings() {
+                wikiFileSettings.innerHTML = '';
+
+                if (fileInput.files.length > 0) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        const file = fileInput.files[i];
+                        const fileName = file.name;
+                        const fileNameWithoutExt = fileName.split('.').slice(0, -1).join('.');
+
+                        const fileDetail = document.createElement('div');
+                        fileDetail.className = 'file-detail';
+                        fileDetail.style.display = 'block';
+
+                        fileDetail.innerHTML = `
+                            <h4>Datei: ${fileName}</h4>
+                            <div>
+                                <label for="wiki_title_${i}">Wiki.js Seitentitel:</label>
+                                <input type="text" id="wiki_title_${i}" name="wiki_title_${i}"
+                                       value="${fileNameWithoutExt}" placeholder="Titel der Wiki-Seite">
+                            </div>
+                            <div>
+                                <label for="wiki_path_${i}">Wiki.js Pfad:</label>
+                                <input type="text" id="wiki_path_${i}" name="wiki_path_${i}"
+                                       placeholder="z.B. Dokumentation/Projekte">
+                            </div>
+                        `;
+
+                        wikiFileSettings.appendChild(fileDetail);
+                    }
+                }
+            }
+
+            // Test Wiki.js connection button
+            testWikiButton.addEventListener('click', function() {
+                this.disabled = true;
+                this.textContent = 'Verbindung wird getestet...';
+
+                fetch('/test_wikijs_connection', {
                     method: 'POST',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                })
+                .catch(error => {
+                    alert('Fehler beim Testen der Verbindung: ' + error);
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.textContent = 'Wiki.js Verbindung testen';
                 });
-                const data = await response.json();
-
-                resultSpan.textContent = data.message;
-                resultSpan.style.color = data.success ? '#4CAF50' : '#f44336';
-
-                // Log response details
-                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: API-Test Antwort: ${data.success ? 'Erfolg' : 'Fehlgeschlagen'}</li>`;
-                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Nachricht: ${data.message}</li>`;
-            } catch (error) {
-                resultSpan.textContent = 'Fehler beim Testen der Verbindung';
-                resultSpan.style.color = '#f44336';
-
-                // Log error
-                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Fehler beim API-Test: ${error.message}</li>`;
-            }
+            });
         });
-
-        // Form submission with debug logging
-        document.querySelector('form').addEventListener('submit', function() {
-            const debugLog = document.getElementById('debug-log');
-            const uploadToWiki = document.getElementById('upload_to_wiki').checked;
-
-            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Formular wird abgesendet...</li>`;
-            debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Wiki.js Upload aktiviert: ${uploadToWiki ? 'Ja' : 'Nein'}</li>`;
-
-            const files = document.getElementById('files').files;
-            if (files.length > 0) {
-                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: ${files.length} Datei(en) ausgewählt: ${Array.from(files).map(f => f.name).join(', ')}</li>`;
-            } else {
-                debugLog.innerHTML += `<li>${new Date().toLocaleTimeString()}: Keine Dateien ausgewählt</li>`;
-            }
-        });
-
-        // Toggle debug panel
-        document.getElementById('debug-toggle').addEventListener('click', function() {
-            const debugContainer = document.getElementById('debug-container');
-            if (debugContainer.style.display === 'none') {
-                debugContainer.style.display = 'block';
-                this.textContent = 'Debug-Informationen ausblenden';
-            } else {
-                debugContainer.style.display = 'none';
-                this.textContent = 'Debug-Informationen anzeigen';
-            }
-        });
-        </script>
-    </div>
-
-    <div class="author-info">
-        Entwickelt von Joachim Mild für TresorHaus GmbH © 2025
-    </div>
+    </script>
 </body>
 </html>
