@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TresorHaus DocFlow Installer
+#  DocFlow Installer
 # Author: Joachim Mild
 # For Debian 12
 
@@ -42,7 +42,7 @@ read -p "Wiki.js API Token eingeben: " WIKIJS_TOKEN
 
 # SystemD Service Definition
 SERVICE_CONTENT="[Unit]
-Description=TresorHaus DocFlow Service
+Description= DocFlow Service
 After=network.target
 
 [Service]
@@ -150,7 +150,7 @@ apt-get clean
 apt-get autoremove -y
 
 # Installations-Zusammenfassung
-echo -e "\n${GREEN}=== TresorHaus DocFlow Installation ====${NC}"
+echo -e "\n${GREEN}===  DocFlow Installation ====${NC}"
 echo -e "Installationsverzeichnis: $INSTALL_DIR"
 echo -e "Service-Name: $SERVICE_NAME"
 echo -e "Service-Benutzer: $SERVICE_USER"

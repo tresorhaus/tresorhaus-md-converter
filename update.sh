@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TresorHaus DocFlow Updater
+#  DocFlow Updater
 # Author: Joachim Mild
 # For Debian 12
 

@@ -1,5 +1,5 @@
 """
-TresorHaus DocFlow
+ DocFlow
 Ein Dokumentenkonverter für verschiedene Dateiformate zu Markdown mit Wiki.js Integration
 
 Author: Joachim Mild
@@ -291,7 +291,7 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
 
     variables = {
         'content': cleaned_content,  # Verwende den bereinigten Inhalt statt des Originals
-        'description': f'Automatisch erstellt durch TresorHaus DocFlow am {timestamp}',
+        'description': f'Automatisch erstellt durch  DocFlow am {timestamp}',
         'editor': 'markdown',
         'isPublished': True,
         'isPrivate': False,  # Hinzugefügt entsprechend dem curl-Beispiel

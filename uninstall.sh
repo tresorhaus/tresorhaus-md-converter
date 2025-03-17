@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TresorHaus DocFlow Uninstaller
+#  DocFlow Uninstaller
 # Author: Joachim Mild
 # For Debian 12
 
