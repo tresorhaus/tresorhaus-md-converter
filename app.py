@@ -787,7 +787,74 @@ def get_wikijs_directories():
             'directories': []
         }
 
-# New route for exporting Wiki.js pages
+def fetch_wikijs_pages(limit=100):
+    """
+    Retrieves a list of pages from Wiki.js
+    Returns a tuple of (pages, error)
+    """
+    if not WIKIJS_URL or not WIKIJS_TOKEN:
+        return [], "Wiki.js URL oder Token nicht konfiguriert"
+
+    try:
+        # GraphQL query to get all pages with id, title, path, and contentType
+        query = f"""
+        {{
+          pages {{
+            list(limit: {limit}) {{
+              id
+              title
+              path
+              contentType
+            }}
+          }}
+        }}
+        """
+
+        headers = {
+            'Authorization': f'Bearer {WIKIJS_TOKEN}',
+            'Content-Type': 'application/json'
+        }
+
+        log_debug(f"Fetching Wiki.js pages from: {WIKIJS_URL}", "api")
+
+        response = requests.post(
+            f'{WIKIJS_URL}/graphql',
+            headers=headers,
+            json={'query': query}
+        )
+
+        response.raise_for_status()
+        data = response.json()
+
+        if 'errors' in data:
+            error_msg = str(data['errors'])
+            log_debug(f"GraphQL Error when fetching pages: {error_msg}", "error")
+            return [], f"GraphQL Error: {error_msg}"
+
+        # Extract pages from response
+        pages = data.get('data', {}).get('pages', {}).get('list', [])
+        log_debug(f"Successfully fetched {len(pages)} pages from Wiki.js", "success")
+
+        # Filter out only markdown content type pages
+        markdown_pages = [page for page in pages if page.get('contentType') == 'markdown']
+
+        return markdown_pages, None
+
+    except requests.exceptions.ConnectionError as e:
+        error_msg = f"Connection error: Could not connect to Wiki.js at {WIKIJS_URL}"
+        log_debug(error_msg, "error")
+        return [], error_msg
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"HTTP error: {str(e)}"
+        log_debug(error_msg, "error")
+        return [], error_msg
+    except Exception as e:
+        error_msg = f"Error fetching Wiki.js pages: {str(e)}"
+        log_debug(error_msg, "error")
+        import traceback
+        log_debug(f"Traceback: {traceback.format_exc()}", "error")
+        return [], error_msg
+
 @app.route('/export', methods=['GET', 'POST'])
 def export():
     if request.method == 'POST':
