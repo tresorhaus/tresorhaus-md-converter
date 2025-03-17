@@ -6,7 +6,15 @@ Created: 2025
 Company: TresorHaus GmbH
 """
 import os
+import sys
 from flask import Flask
+
+# Add the project root to the path to enable absolute imports
+project_root = os.path.dirname(os.path.abspath(__file__))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Use absolute imports instead of relative imports
 from config import SECRET_KEY
 from routes.main_routes import main_bp
 from routes.export_routes import export_bp
