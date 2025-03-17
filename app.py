@@ -1073,16 +1073,19 @@ def fetch_wikijs_page_content(page_path):
         log_debug("Wiki.js URL or token not configured", "error")
         return None, None
 
-    # GraphQL query to get page content
-    query = """
-    query GetPage($path: String!) {
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {WIKIJS_TOKEN}'
+    }
+
+    # Step 1: First query to find the page ID based on path
+    find_page_query = """
+    query FindPage($path: String!) {
       pages {
-        single(path: $path) {
-          content
-          title
-          description
-          path
+        list(filter: $path) {
           id
+          path
+          title
         }
       }
     }
@@ -1092,58 +1095,105 @@ def fetch_wikijs_page_content(page_path):
         'path': page_path
     }
 
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {WIKIJS_TOKEN}'
-    }
-
     try:
-        log_debug(f"Sending request to Wiki.js API at: {WIKIJS_URL}/graphql", "api")
+        log_debug(f"Step 1: Finding page ID for path: {page_path}", "api")
         response = requests.post(
             f"{WIKIJS_URL}/graphql",
-            json={'query': query, 'variables': variables},
+            json={'query': find_page_query, 'variables': variables},
             headers=headers
         )
 
-        # Log the full response for debugging purposes
-        log_debug(f"Raw API response status code: {response.status_code}", "api")
+        response_data = response.json()
+        log_debug(f"Find page response: {response_data}", "api")
 
-        try:
-            # Try to parse the response as JSON for better logging
-            response_data = response.json()
-            log_debug(f"Raw API response body: {response_data}", "api")
+        if 'errors' in response_data:
+            error_messages = ', '.join([error.get('message', 'Unknown error') for error in response_data['errors']])
+            log_debug(f"GraphQL errors finding page: {error_messages}", "error")
+            return None, None
 
-            if 'errors' in response_data:
-                error_messages = ', '.join([error.get('message', 'Unknown error') for error in response_data['errors']])
-                log_debug(f"GraphQL errors: {error_messages}", "error")
-                return None, None
+        # Extract the page ID from the response
+        pages = response_data.get('data', {}).get('pages', {}).get('list', [])
+        if not pages:
+            log_debug(f"No page found with path: {page_path}", "error")
+            return None, None
 
-            # Check if we got the expected data structure
-            pages_data = response_data.get('data', {}).get('pages', {})
-            page_data = pages_data.get('single')
+        # Find the exact path match
+        page = None
+        for p in pages:
+            if p.get('path') == page_path:
+                page = p
+                break
 
-            if not page_data:
-                log_debug(f"No page data found in response. Response structure: {pages_data}", "error")
-                return None, None
+        # If no exact match found, use the first result
+        if not page and pages:
+            page = pages[0]
+            log_debug(f"No exact path match found, using first result: {page.get('path')}", "warning")
 
-            content = page_data.get('content')
+        page_id = page.get('id')
+        title = page.get('title')
+
+        if not page_id:
+            log_debug(f"Could not find page ID for path: {page_path}", "error")
+            return None, title
+
+        log_debug(f"Found page ID: {page_id} for path: {page_path}", "success")
+
+        # Step 2: Now get the content using the page ID
+        content_query = """
+        query GetPageContent($id: Int!) {
+          pages {
+            single(id: $id) {
+              content
+              title
+              description
+              path
+              id
+            }
+          }
+        }
+        """
+
+        content_variables = {
+            'id': page_id
+        }
+
+        log_debug(f"Step 2: Fetching content for page ID: {page_id}", "api")
+        content_response = requests.post(
+            f"{WIKIJS_URL}/graphql",
+            json={'query': content_query, 'variables': content_variables},
+            headers=headers
+        )
+
+        content_data = content_response.json()
+        log_debug(f"Content response: {content_data}", "api")
+
+        if 'errors' in content_data:
+            error_messages = ', '.join([error.get('message', 'Unknown error') for error in content_data['errors']])
+            log_debug(f"GraphQL errors fetching content: {error_messages}", "error")
+            return None, title
+
+        # Extract content from response
+        page_data = content_data.get('data', {}).get('pages', {}).get('single')
+        if not page_data:
+            log_debug(f"No content data found for page ID: {page_id}", "error")
+            return None, title
+
+        content = page_data.get('content')
+        # Update title if available in content response
+        if page_data.get('title'):
             title = page_data.get('title')
 
-            if not content:
-                log_debug(f"Page found but content is empty. Page data: {page_data}", "warning")
-                return None, title
+        if not content:
+            log_debug(f"Page found but content is empty. Page data: {page_data}", "warning")
+            return None, title
 
-            log_debug(f"Successfully fetched content for page: {title} ({len(content)} chars)", "success")
-            return content, title
+        log_debug(f"Successfully fetched content for page: {title} ({len(content)} chars)", "success")
+        return content, title
 
-        except ValueError as json_err:
-            log_debug(f"Failed to parse Wiki.js API response as JSON: {str(json_err)}", "error")
-            log_debug(f"Raw response: {response.text[:200]}...", "error")
-            return None, None
-
-        except Exception as parse_err:
-            log_debug(f"Error parsing Wiki.js API response: {str(parse_err)}", "error")
-            return None, None
+    except ValueError as json_err:
+        log_debug(f"Failed to parse Wiki.js API response as JSON: {str(json_err)}", "error")
+        log_debug(f"Raw response: {response.text[:200] if 'response' in locals() else 'No response available'}...", "error")
+        return None, None
 
     except requests.exceptions.ConnectionError:
         log_debug(f"Connection error: Could not connect to Wiki.js at {WIKIJS_URL}", "error")
@@ -1155,6 +1205,8 @@ def fetch_wikijs_page_content(page_path):
 
     except Exception as e:
         log_debug(f"Unexpected error while fetching page content: {str(e)}", "error")
+        import traceback
+        log_debug(f"Traceback: {traceback.format_exc()}", "error")
         return None, None
 
 def sanitize_filename(title):
