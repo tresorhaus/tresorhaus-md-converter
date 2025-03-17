@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<!--
+    DocFlow - Wiki.js Export Tool
+    Created by: Joachim Mild
+    Copyright (c) 2023 TresorHaus GmbH
+-->
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocFlow - Wiki.js Export</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        .format-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            margin-bottom: 20px;
+        }
+
+        .format-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .format-option:hover {
+            background-color: #e0e0e0;
+        }
+
+        .format-option input {
+            margin-right: 5px;
+        }
+
+        .search-container {
+            margin-bottom: 15px;
+        }
+
+        #searchPages {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .pages-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .page-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .page-item:last-child {
+            border-bottom: none;
+        }
+
+        .page-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .page-item label {
+            margin-left: 10px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .page-path {
+            color: #666;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        .select-all-container {
+            margin-bottom: 10px;
+            padding: 5px 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .nav-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            background-color: #f5f5f5;
+        }
+
+        .nav-tab.active {
+            background-color: white;
+            border-color: #ddd;
+            border-bottom-color: white;
+            margin-bottom: -1px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Switch -->
+    <div class="theme-switch-wrapper">
+        <label class="theme-switch" for="checkbox">
+            <input type="checkbox" id="checkbox" />
+            <div class="slider"></div>
+        </label>
+    </div>
+
+    <div class="container">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo-tresorhaus.svg') }}" alt="TresorHaus Logo">
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <div class="nav-tab" onclick="location.href='{{ url_for('index') }}'">Dokument zu Wiki.js</div>
+            <div class="nav-tab active">Wiki.js zu Dokument</div>
+        </div>
+
+        <h1>DocFlow - Wiki.js Export</h1>
+        <p>Exportieren Sie Wiki.js-Seiten in verschiedene Dokumentformate.</p>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% if error %}
+        <div class="alert error-alert">
+            <p>Fehler beim Abrufen der Wiki.js-Seiten: {{ error }}</p>
+            <p>Bitte überprüfen Sie die Wiki.js-Verbindung.</p>
+            <button type="button" id="testWikiButton" class="small-button">Wiki.js API testen</button>
+        </div>
+        {% elif not wiki_url %}
+        <div class="alert warning-alert">
+            <p>Wiki.js ist nicht konfiguriert. Bitte setzen Sie die Umgebungsvariablen WIKIJS_URL und WIKIJS_TOKEN.</p>
+        </div>
+        {% else %}
+        <form id="exportForm" method="POST" action="{{ url_for('export') }}">
+            <div class="section">
+                <h3>1. Ausgabeformate auswählen</h3>
+                <div class="format-options">
+                    {% for format in output_formats %}
+                    <div class="format-option">
+                        <input type="checkbox" name="formats" id="format_{{ format }}" value="{{ format }}">
+                        <label for="format_{{ format }}">{{ format|upper }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>2. Wiki.js-Seiten auswählen</h3>
+
+                <div class="search-container">
+                    <input type="text" id="searchPages" placeholder="Seiten durchsuchen...">
+                </div>
+
+                <div class="select-all-container">
+                    <input type="checkbox" id="selectAll" name="selectAll">
+                    <label for="selectAll">Alle auswählen</label>
+                </div>
+
+                <div class="pages-container">
+                    {% if pages %}
+                        {% for page in pages %}
+                        <div class="page-item">
+                            <input type="checkbox" name="pages" id="page_{{ loop.index }}" value="{{ page.path }}">
+                            <label for="page_{{ loop.index }}">
+                                {{ page.title }}
+                                <span class="page-path">{{ page.path }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>Keine Seiten gefunden.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="actions" style="margin-top: 20px;">
+                <button type="submit">Exportieren</button>
+            </div>
+        </form>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <div>Entwickelt von Joachim Mild für TresorHaus GmbH</div>
+            <div class="footer-buttons">
+                <button type="button" id="testWikiButton" class="small-button">Wiki.js API testen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme switching functionality
+            const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+
+            function switchTheme(e) {
+                if (e.target.checked) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                }
+            }
+
+            toggleSwitch.addEventListener('change', switchTheme, false);
+
+            // Check for saved theme preference
+            const currentTheme = localStorage.getItem('theme');
+            if (currentTheme) {
+                document.documentElement.setAttribute('data-theme', currentTheme);
+                if (currentTheme === 'dark') {
+                    toggleSwitch.checked = true;
+                }
+            }
+
+            // Test Wiki.js connection button
+            const testWikiButton = document.getElementById('testWikiButton');
+            if (testWikiButton) {
+                testWikiButton.addEventListener('click', function() {
+                    this.disabled = true;
+                    this.textContent = 'Verbindung wird getestet...';
+
+                    fetch('/test_wikijs_connection', {
+                        method: 'POST',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                    })
+                    .catch(error => {
+                        alert('Fehler beim Testen der Verbindung: ' + error);
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                        this.textContent = 'Wiki.js API testen';
+                    });
+                });
+            }
+
+            // Search functionality
+            const searchInput = document.getElementById('searchPages');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const pageItems = document.querySelectorAll('.page-item');
+
+                    pageItems.forEach(item => {
+                        const title = item.querySelector('label').textContent.toLowerCase();
+                        if (title.includes(searchTerm)) {
+                            item.style.display = 'flex';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            // Select all pages checkbox
+            const selectAllCheckbox = document.getElementById('selectAll');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('input[name="pages"]');
+                    checkboxes.forEach(checkbox => {
+                        if (checkbox.parentElement.style.display !== 'none') {
+                            checkbox.checked = this.checked;
+                        }
+                    });
+                });
+            }
+
+            // Validation before form submission
+            const exportForm = document.getElementById('exportForm');
+            if (exportForm) {
+                exportForm.addEventListener('submit', function(event) {
+                    const selectedFormats = document.querySelectorAll('input[name="formats"]:checked');
+                    const selectedPages = document.querySelectorAll('input[name="pages"]:checked');
+
+                    if (selectedFormats.length === 0) {
+                        event.preventDefault();
+                        alert('Bitte wählen Sie mindestens ein Ausgabeformat aus.');
+                        return;
+                    }
+
+                    if (selectedPages.length === 0) {
+                        event.preventDefault();
+                        alert('Bitte wählen Sie mindestens eine Wiki.js-Seite aus.');
+                        return;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

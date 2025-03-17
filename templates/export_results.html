@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!--
+    DocFlow - Wiki.js Export Results
+    Created by: Joachim Mild
+    Copyright (c) 2023 TresorHaus GmbH
+-->
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocFlow - Export Ergebnisse</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        .result-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .result-list li {
+            background-color: #f9f9f9;
+            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .result-list .filename {
+            flex: 1;
+        }
+
+        .success-badge, .error-badge {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .success-badge {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .error-badge {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .summary-box {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .debug-section {
+            margin-top: 30px;
+            display: none;
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #6c757d;
+        }
+
+        pre {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .nav-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .nav-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            background-color: #f5f5f5;
+        }
+
+        .nav-tab.active {
+            background-color: white;
+            border-color: #ddd;
+            border-bottom-color: white;
+            margin-bottom: -1px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Switch -->
+    <div class="theme-switch-wrapper">
+        <label class="theme-switch" for="checkbox">
+            <input type="checkbox" id="checkbox" />
+            <div class="slider"></div>
+        </label>
+    </div>
+
+    <div class="container">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo-tresorhaus.svg') }}" alt="TresorHaus Logo">
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <div class="nav-tab" onclick="location.href='{{ url_for('index') }}'">Dokument zu Wiki.js</div>
+            <div class="nav-tab" onclick="location.href='{{ url_for('export') }}'">Wiki.js zu Dokument</div>
+            <div class="nav-tab active">Ergebnisse</div>
+        </div>
+
+        <h1>DocFlow - Wiki.js Export Ergebnisse</h1>
+        <p>Ergebnisse Ihres Wiki.js-Exports</p>
+
+        <div class="summary-box">
+            <h3>Zusammenfassung</h3>
+            <p>{{ converted_files|length }} Datei(en) erfolgreich konvertiert, {{ failed_files|length }} Fehler.</p>
+            <p>
+                <a href="{{ url_for('download_exported_zip', session_id=session_id) }}" class="btn">Alle Dateien als ZIP herunterladen</a>
+                <a href="{{ url_for('export') }}" class="btn btn-secondary">Zurück zum Export</a>
+            </p>
+        </div>
+
+        {% if converted_files %}
+        <h3>Erfolgreich konvertierte Dateien</h3>
+        <ul class="result-list">
+            {% for filename in converted_files %}
+            <li>
+                <div class="filename">
+                    {{ filename }} <span class="success-badge">✓</span>
+                </div>
+                <div class="actions">
+                    <a href="{{ url_for('download_exported_file', session_id=session_id, filename=filename) }}" class="btn btn-secondary">Herunterladen</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if failed_files %}
+        <h3>Fehlerhafte Konvertierungen</h3>
+        <ul class="result-list">
+            {% for filename in failed_files %}
+            <li>
+                <div class="filename">{{ filename }} <span class="error-badge">✗</span></div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <button id="debug-toggle" class="blue-toggle-btn">Debug-Informationen anzeigen</button>
+        <div id="debug-section" class="debug-section">
+            <h3>Debug-Informationen</h3>
+            <pre>
+{% for log in debug_logs %}
+[{{ log.timestamp }}] [{{ log.level }}] {{ log.message }}
+{% endfor %}
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme switching
+            const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+
+            function switchTheme(e) {
+                if (e.target.checked) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                }
+            }
+
+            toggleSwitch.addEventListener('change', switchTheme, false);
+
+            const currentTheme = localStorage.getItem('theme');
+            if (currentTheme) {
+                document.documentElement.setAttribute('data-theme', currentTheme);
+                if (currentTheme === 'dark') {
+                    toggleSwitch.checked = true;
+                }
+            }
+
+            // Debug toggle
+            const debugToggle = document.getElementById('debug-toggle');
+            const debugSection = document.getElementById('debug-section');
+
+            debugToggle.addEventListener('click', function() {
+                if (debugSection.style.display === 'block') {
+                    debugSection.style.display = 'none';
+                    debugToggle.textContent = 'Debug-Informationen anzeigen';
+                } else {
+                    debugSection.style.display = 'block';
+                    debugToggle.textContent = 'Debug-Informationen ausblenden';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

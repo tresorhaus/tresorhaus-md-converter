@@ -557,6 +557,40 @@
                 margin-bottom: 10px;
             }
         }
+
+        /* Add navigation tabs styling to match export pages */
+        .nav-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .nav-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            background-color: #f5f5f5;
+        }
+
+        .nav-tab.active {
+            background-color: white;
+            border-color: #ddd;
+            border-bottom-color: white;
+            margin-bottom: -1px;
+        }
+
+        /* Dark theme for tabs */
+        .dark-theme .nav-tab {
+            background-color: #333;
+        }
+
+        .dark-theme .nav-tab.active {
+            background-color: #2c2c2c;
+            border-color: #555;
+            border-bottom-color: #2c2c2c;
+        }
     </style>
 </head>
 <body>
@@ -572,6 +606,13 @@
         <div class="logo">
             <img src="{{ url_for('static', filename='logo-tresorhaus.svg') }}" alt="TresorHaus Logo">
         </div>
+
+        <!-- Add Navigation Tabs -->
+        <div class="nav-tabs">
+            <div class="nav-tab active">Dokument zu Wiki.js</div>
+            <div class="nav-tab" onclick="location.href='{{ url_for('export') }}'">Wiki.js zu Dokument</div>
+        </div>
+
         <h1>DocFlow - Markdown Converter for Wiki.js</h1>
         <p>Konvertieren Sie Ihre Dokumente nach Markdown und laden Sie sie optional direkt in Ihr Wiki.js hoch.</p>
 
