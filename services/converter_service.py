@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 from utils.file_utils import get_input_format, allowed_file
 from utils.markdown_utils import clean_markdown_content
-from config import OUTPUT_FORMAT_MAPPING
+from ..config import OUTPUT_FORMAT_MAPPING  # Changed to relative import
 
 def convert_to_markdown(input_path, output_path):
     """Konvertiert eine Datei in Markdown mithilfe von pandoc"""
