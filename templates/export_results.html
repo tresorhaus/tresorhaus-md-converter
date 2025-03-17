@@ -230,11 +230,84 @@
             border-left: 4px solid #6c757d;
         }
 
-        pre {
-            background-color: #f1f1f1;
+        .debug-tabs {
+            margin-bottom: 15px;
+        }
+
+        .tab-content {
+            display: none;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 0 0 4px 4px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .debug-page-item {
+            margin-bottom: 15px;
             padding: 10px;
+            border: 1px solid #ddd;
             border-radius: 4px;
-            overflow-x: auto;
+            background-color: #f9f9f9;
+        }
+
+        .error-highlight {
+            border-left: 4px solid #dc3545;
+            background-color: #fff8f8;
+        }
+
+        .success-text {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .error-text {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .debug-tips {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fffbea;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        .debug-pages-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        /* Dark theme adjustments for debug section */
+        .dark-theme .debug-section {
+            background-color: #2a2a2a;
+            border-left: 4px solid #6c757d;
+        }
+
+        .dark-theme .tab-content {
+            background-color: #333;
+            border-color: #444;
+        }
+
+        .dark-theme .debug-page-item {
+            background-color: #2c2c2c;
+            border-color: #444;
+        }
+
+        .dark-theme .error-highlight {
+            border-left: 4px solid #dc3545;
+            background-color: #3a2828;
+        }
+
+        .dark-theme .debug-tips {
+            background-color: #3a3520;
+            border-left: 4px solid #ffc107;
         }
 
         .nav-tabs {
@@ -428,13 +501,56 @@
         {% endif %}
 
         <button id="debug-toggle" class="blue-toggle-btn">Debug-Informationen anzeigen</button>
+
         <div id="debug-section" class="debug-section">
             <h3>Debug-Informationen</h3>
-            <pre>
+
+            <div class="debug-tabs">
+                <div class="nav-tab active" data-tab="log-tab">Log-Einträge</div>
+                <div class="nav-tab" data-tab="api-tab">API-Details</div>
+            </div>
+
+            <div id="log-tab" class="tab-content active">
+                <pre>
 {% for log in debug_logs %}
 [{{ log.timestamp }}] [{{ log.level }}] {{ log.message }}
 {% endfor %}
-            </pre>
+                </pre>
+            </div>
+
+            <div id="api-tab" class="tab-content">
+                <h4>Wiki.js API Antworten</h4>
+
+                <div class="debug-pages-container">
+                {% for page_path, data in debug_data.items() %}
+                    <div class="debug-page-item {% if not data.has_content %}error-highlight{% endif %}">
+                        <ul>
+                            <li>Titel: {{ data.title if data.title else 'Nicht gefunden' }}</li>
+                            <li>Inhaltslänge: {{ data.content_length }} Zeichen</li>
+                            <li>Status:
+                                <span class="{% if data.has_content %}success-text{% else %}error-text{% endif %}">
+                                    {{ 'Inhalt gefunden' if data.has_content else 'Kein Inhalt' }}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                {% endfor %}
+                </div>
+
+                <div class="debug-tips">
+                    <h4>Tipps bei fehlendem Inhalt:</h4>
+                    <ul>
+                        <li>Überprüfen Sie die notwendigen Berechtigungen</li>
+                        <li>Die Seite existiert nicht unter dem angegebenen Pfad</li>
+                        <li>Die Seite ist leer oder wurde gelöscht</li>
+                        <li>Verbindungsprobleme zum Wiki.js Server</li>
+                    </ul>
+                </div>
+
+                {% if not debug_data %}
+                <p>Keine API Debug-Daten verfügbar.</p>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Footer with creator information -->
@@ -448,6 +564,17 @@
             // Theme switching
             const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
 
+            // Check for saved theme preference
+            const currentTheme = localStorage.getItem('theme');
+
+            if (currentTheme) {
+                // If dark theme was saved, check the toggle and apply dark theme
+                if (currentTheme === 'dark') {
+                    toggleSwitch.checked = true;
+                    document.body.classList.add('dark-theme');
+                }
+            }
+
             function switchTheme(e) {
                 if (e.target.checked) {
                     document.body.classList.add('dark-theme');
@@ -460,27 +587,35 @@
 
             toggleSwitch.addEventListener('change', switchTheme, false);
 
-            // Check for saved theme preference
-            const currentTheme = localStorage.getItem('theme');
-            if (currentTheme) {
-                if (currentTheme === 'dark') {
-                    toggleSwitch.checked = true;
-                    document.body.classList.add('dark-theme');
-                }
-            }
-
             // Debug toggle
             const debugToggle = document.getElementById('debug-toggle');
             const debugSection = document.getElementById('debug-section');
 
             debugToggle.addEventListener('click', function() {
-                if (debugSection.style.display === 'block') {
-                    debugSection.style.display = 'none';
-                    debugToggle.textContent = 'Debug-Informationen anzeigen';
-                } else {
-                    debugSection.style.display = 'block';
-                    debugToggle.textContent = 'Debug-Informationen ausblenden';
-                }
+                const isVisible = debugSection.style.display === 'block';
+                debugSection.style.display = isVisible ? 'none' : 'block';
+                debugToggle.textContent = isVisible ?
+                    'Debug-Informationen anzeigen' :
+                    'Debug-Informationen ausblenden';
+            });
+
+            // Debug tabs
+            const debugTabs = document.querySelectorAll('.debug-tabs .nav-tab');
+
+            debugTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs and contents
+                    const tabContents = document.querySelectorAll('.tab-content');
+                    debugTabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+
+                    // Show corresponding content
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
             });
         });
     </script>

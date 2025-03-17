@@ -871,7 +871,7 @@ def export():
 
         session_id = str(uuid.uuid4())
 
-        converted_files, failed_files = export_pages_to_formats(
+        converted_files, failed_files, debug_data = export_pages_to_formats(
             selected_pages,
             selected_formats,
             session_id
@@ -882,7 +882,8 @@ def export():
             converted_files=converted_files,
             failed_files=failed_files,
             session_id=session_id,
-            debug_logs=debug_logs
+            debug_logs=debug_logs,
+            debug_data=debug_data
         )
 
     # GET request: Show the export interface
@@ -927,7 +928,7 @@ def download_exported_zip(session_id):
 
     return send_file(
         memory_file,
-        attachment_filename=f'exported_wiki_pages_{timestamp}.zip',
+        download_name=f'exported_wiki_pages_{timestamp}.zip',
         as_attachment=True
     )
 
@@ -967,7 +968,7 @@ def export_pages_to_formats(page_paths, formats, session_id):
         session_id: Session ID for storing results
 
     Returns:
-        tuple: (converted_files, failed_files)
+        tuple: (converted_files, failed_files, debug_data)
     """
     log_debug(f"Starting export of {len(page_paths)} pages to formats: {', '.join(formats)}")
 
@@ -977,6 +978,7 @@ def export_pages_to_formats(page_paths, formats, session_id):
 
     converted_files = []
     failed_files = []
+    debug_data = {}
 
     for page_path in page_paths:
         try:
@@ -984,7 +986,15 @@ def export_pages_to_formats(page_paths, formats, session_id):
             log_debug(f"Fetching content for page: {page_path}")
             page_content, page_title = fetch_wikijs_page_content(page_path)
 
+            # Store debug data for this page
+            debug_data[page_path] = {
+                'title': page_title,
+                'content_length': len(page_content) if page_content else 0,
+                'has_content': bool(page_content)
+            }
+
             if not page_content:
+                error_msg = "No content found"
                 log_debug(f"No content found for page: {page_path}", "error")
                 failed_files.append(f"{page_path} (no content)")
                 continue
@@ -1053,88 +1063,118 @@ def export_pages_to_formats(page_paths, formats, session_id):
             log_debug(f"Unexpected error processing {page_path}: {str(e)}", "error")
             failed_files.append(page_path)
 
-    return converted_files, failed_files
+    return converted_files, failed_files, debug_data
 
 def fetch_wikijs_page_content(page_path):
     """Fetch page content from Wiki.js API"""
+    log_debug(f"Fetching Wiki.js page content for path: {page_path}", "api")
+
     if not WIKIJS_URL or not WIKIJS_TOKEN:
         log_debug("Wiki.js URL or token not configured", "error")
         return None, None
 
-    log_debug(f"Fetching content for page: {page_path}")
-
-    # GraphQL query to get page content and title
+    # GraphQL query to get page content
     query = """
-    query ($path: String!) {
-        pages {
-            single(path: $path) {
-                content
-                title
-            }
+    query GetPage($path: String!) {
+      pages {
+        single(path: $path) {
+          content
+          title
+          description
+          path
+          id
         }
+      }
     }
     """
 
     variables = {
-        "path": page_path
+        'path': page_path
     }
 
     headers = {
-        "Authorization": f"Bearer {WIKIJS_TOKEN}",
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {WIKIJS_TOKEN}'
     }
 
     try:
+        log_debug(f"Sending request to Wiki.js API at: {WIKIJS_URL}/graphql", "api")
         response = requests.post(
             f"{WIKIJS_URL}/graphql",
-            json={"query": query, "variables": variables},
+            json={'query': query, 'variables': variables},
             headers=headers
         )
 
-        if response.status_code != 200:
-            log_debug(f"Wiki.js API error: {response.status_code} - {response.text}", "error")
-            return None, None
+        # Log the full response for debugging purposes
+        log_debug(f"Raw API response status code: {response.status_code}", "api")
 
-        data = response.json()
+        try:
+            # Try to parse the response as JSON for better logging
+            response_data = response.json()
+            log_debug(f"Raw API response body: {response_data}", "api")
 
-        # Check for errors in the response
-        if "errors" in data:
-            log_debug(f"Wiki.js GraphQL error: {data['errors']}", "error")
-            return None, None
+            if 'errors' in response_data:
+                error_messages = ', '.join([error.get('message', 'Unknown error') for error in response_data['errors']])
+                log_debug(f"GraphQL errors: {error_messages}", "error")
+                return None, None
 
-        # Extract page content and title
-        if data.get("data") and data["data"].get("pages") and data["data"]["pages"].get("single"):
-            page_data = data["data"]["pages"]["single"]
-            content = page_data.get("content", "")
-            title = page_data.get("title", "")
+            # Check if we got the expected data structure
+            pages_data = response_data.get('data', {}).get('pages', {})
+            page_data = pages_data.get('single')
+
+            if not page_data:
+                log_debug(f"No page data found in response. Response structure: {pages_data}", "error")
+                return None, None
+
+            content = page_data.get('content')
+            title = page_data.get('title')
+
+            if not content:
+                log_debug(f"Page found but content is empty. Page data: {page_data}", "warning")
+                return None, title
+
+            log_debug(f"Successfully fetched content for page: {title} ({len(content)} chars)", "success")
             return content, title
-        else:
-            log_debug(f"No content found for page: {page_path}", "error")
+
+        except ValueError as json_err:
+            log_debug(f"Failed to parse Wiki.js API response as JSON: {str(json_err)}", "error")
+            log_debug(f"Raw response: {response.text[:200]}...", "error")
             return None, None
 
-    except Exception as e:
-        log_debug(f"Error fetching page content: {str(e)}", "error")
+        except Exception as parse_err:
+            log_debug(f"Error parsing Wiki.js API response: {str(parse_err)}", "error")
+            return None, None
+
+    except requests.exceptions.ConnectionError:
+        log_debug(f"Connection error: Could not connect to Wiki.js at {WIKIJS_URL}", "error")
         return None, None
 
-# Add a helper function to sanitize filenames
+    except requests.exceptions.HTTPError as http_err:
+        log_debug(f"HTTP error from Wiki.js API: {http_err}", "error")
+        return None, None
+
+    except Exception as e:
+        log_debug(f"Unexpected error while fetching page content: {str(e)}", "error")
+        return None, None
+
 def sanitize_filename(title):
     """
-    Sanitizes a title to be safely used as a filename
-    - Converts umlauts properly (ä→ae, ö→oe, ü→ue, ß→ss)
-    - Removes invalid filename characters
+    Sanitizes a string to be used as a filename.
+    - Transliterates German special characters (ä→ae, ö→oe, ü→ue, ß→ss)
+    - Removes characters that are invalid in filenames
     - Ensures the result is a valid filename
     """
     if not title:
         return "untitled"
 
-    # First handle German umlauts properly
-    transliterations = {
+    # Transliterate German umlauts properly
+    replacements = {
         'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss',
         'Ä': 'Ae', 'Ö': 'Oe', 'Ü': 'Ue',
         # Add other special characters as needed
     }
 
-    for char, replacement in transliterations.items():
+    for char, replacement in replacements.items():
         title = title.replace(char, replacement)
 
     # Replace characters that are invalid in filenames
