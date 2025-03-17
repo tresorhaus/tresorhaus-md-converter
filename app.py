@@ -957,6 +957,155 @@ def ensure_static_files_exist():
     if not os.path.exists(favicon_path):
         print(f"Warning: Favicon file not found at {favicon_path}. Please add a favicon file.")
 
+def export_pages_to_formats(page_paths, formats, session_id):
+    """
+    Export Wiki.js pages to various document formats using Pandoc
+
+    Args:
+        page_paths: List of Wiki.js page paths to export
+        formats: List of output formats
+        session_id: Session ID for storing results
+
+    Returns:
+        tuple: (converted_files, failed_files)
+    """
+    add_debug_log(f"Starting export of {len(page_paths)} pages to formats: {', '.join(formats)}")
+
+    # Create session directories
+    export_dir = os.path.join(RESULT_FOLDER, session_id)
+    os.makedirs(export_dir, exist_ok=True)
+
+    converted_files = []
+    failed_files = []
+
+    for page_path in page_paths:
+        try:
+            # Get page content from Wiki.js
+            add_debug_log(f"Fetching content for page: {page_path}")
+            page_content = fetch_wikijs_page_content(page_path)
+
+            if not page_content:
+                add_debug_log(f"No content found for page: {page_path}", level="ERROR")
+                failed_files.append(f"{page_path} (no content)")
+                continue
+
+            # Get page title from path
+            page_title = os.path.basename(page_path)
+            if not page_title:
+                page_title = "untitled"
+
+            # Create temporary markdown file
+            md_filename = secure_filename(f"{page_title}.md")
+            md_filepath = os.path.join(export_dir, md_filename)
+
+            with open(md_filepath, 'w', encoding='utf-8') as f:
+                f.write(page_content)
+
+            # Convert to requested formats
+            for output_format in formats:
+                output_filename = secure_filename(f"{page_title}.{output_format}")
+                output_filepath = os.path.join(export_dir, output_filename)
+
+                add_debug_log(f"Converting {page_path} to {output_format}")
+
+                # Prepare command
+                if output_format == "pdf":
+                    cmd = [
+                        'pandoc',
+                        '-f', 'markdown',
+                        '-t', 'pdf',
+                        '-o', output_filepath,
+                        md_filepath
+                    ]
+                else:
+                    cmd = [
+                        'pandoc',
+                        '-f', 'markdown',
+                        '-t', OUTPUT_FORMAT_MAPPING[output_format],
+                        '-o', output_filepath,
+                        md_filepath
+                    ]
+
+                # Execute conversion
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        check=True
+                    )
+                    converted_files.append(output_filename)
+                    add_debug_log(f"Successfully converted {page_path} to {output_format}")
+                except subprocess.CalledProcessError as e:
+                    add_debug_log(f"Pandoc error converting {page_path} to {output_format}: {e.stderr}", level="ERROR")
+                    failed_files.append(f"{page_path} ({output_format})")
+                except Exception as e:
+                    add_debug_log(f"Error converting {page_path} to {output_format}: {str(e)}", level="ERROR")
+                    failed_files.append(f"{page_path} ({output_format})")
+
+        except Exception as e:
+            add_debug_log(f"Unexpected error processing {page_path}: {str(e)}", level="ERROR")
+            failed_files.append(page_path)
+
+    return converted_files, failed_files
+
+def fetch_wikijs_page_content(page_path):
+    """Fetch page content from Wiki.js API"""
+    if not WIKIJS_URL or not WIKIJS_TOKEN:
+        add_debug_log("Wiki.js URL or token not configured", level="ERROR")
+        return None
+
+    add_debug_log(f"Fetching content for page: {page_path}")
+
+    # GraphQL query to get page content
+    query = """
+    query ($path: String!) {
+        pages {
+            single(path: $path) {
+                content
+            }
+        }
+    }
+    """
+
+    variables = {
+        "path": page_path
+    }
+
+    headers = {
+        "Authorization": f"Bearer {WIKIJS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.post(
+            f"{WIKIJS_URL}/graphql",
+            json={"query": query, "variables": variables},
+            headers=headers
+        )
+
+        if response.status_code != 200:
+            add_debug_log(f"Wiki.js API error: {response.status_code} - {response.text}", level="ERROR")
+            return None
+
+        data = response.json()
+
+        # Check for errors in the response
+        if "errors" in data:
+            add_debug_log(f"Wiki.js GraphQL error: {data['errors']}", level="ERROR")
+            return None
+
+        # Extract page content
+        if data.get("data") and data["data"].get("pages") and data["data"]["pages"].get("single"):
+            return data["data"]["pages"]["single"]["content"]
+        else:
+            add_debug_log(f"No content found for page: {page_path}", level="ERROR")
+            return None
+
+    except Exception as e:
+        add_debug_log(f"Error fetching page content: {str(e)}", level="ERROR")
+        return None
+
 if __name__ == '__main__':
     # Stelle sicher, dass das Templates-Verzeichnis existiert
     templates_dir = os.path.join(app.root_path, 'templates')
