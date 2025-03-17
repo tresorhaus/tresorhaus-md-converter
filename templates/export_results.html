@@ -97,6 +97,107 @@
             border-bottom-color: white;
             margin-bottom: -1px;
         }
+
+        /* Dark mode styles */
+        body.dark-theme {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .dark-theme .container {
+            background-color: #2c2c2c;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .dark-theme h1, .dark-theme h2, .dark-theme h3 {
+            color: #e0e0e0;
+        }
+
+        .dark-theme h1 {
+            color: #58a6e6;
+            border-bottom: 1px solid #444;
+        }
+
+        .dark-theme .btn {
+            background-color: #58a6e6;
+        }
+
+        .dark-theme .btn:hover {
+            background-color: #4a90c7;
+        }
+
+        .dark-theme .btn-secondary {
+            background-color: #6c757d;
+        }
+
+        .dark-theme .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .dark-theme .summary-box {
+            background-color: #2a526a;
+            border-left: 4px solid #58a6e6;
+        }
+
+        .dark-theme .result-list li {
+            background-color: #3a3a3a;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .dark-theme .debug-section {
+            background-color: #2a2a2a;
+            border-left: 4px solid #6c757d;
+        }
+
+        .dark-theme pre {
+            background-color: #333;
+            color: #e0e0e0;
+        }
+
+        .dark-theme .blue-toggle-btn {
+            background-color: #58a6e6;
+        }
+
+        .dark-theme .blue-toggle-btn:hover {
+            background-color: #4a90c7;
+        }
+
+        .dark-theme .footer {
+            color: #aaa;
+            border-top: 1px solid #444;
+        }
+
+        .dark-theme .nav-tab {
+            background-color: #333;
+        }
+
+        .dark-theme .nav-tab.active {
+            background-color: #2c2c2c;
+            border-color: #555;
+            border-bottom-color: #2c2c2c;
+        }
+
+        /* Footer styles */
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px 0;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #666;
+            transition: border 0.3s, color 0.3s;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .theme-switch-wrapper {
+                position: relative;
+                top: 0;
+                right: 0;
+                justify-content: flex-end;
+                margin-bottom: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -168,6 +269,11 @@
 {% endfor %}
             </pre>
         </div>
+
+        <!-- Footer with creator information -->
+        <div class="footer">
+            <div>Entwickelt von Joachim Mild für TresorHaus GmbH</div>
+        </div>
     </div>
 
     <script>
@@ -175,25 +281,34 @@
             // Theme switching
             const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
 
-            function switchTheme(e) {
+            function enableDarkMode() {
+                document.body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark');
+                toggleSwitch.checked = true;
+            }
+
+            function disableDarkMode() {
+                document.body.classList.remove('dark-theme');
+                localStorage.setItem('theme', 'light');
+                toggleSwitch.checked = false;
+            }
+
+            // Check user's theme preference
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            if (currentTheme === 'dark') {
+                enableDarkMode();
+            } else {
+                disableDarkMode();
+            }
+
+            // Listen for toggle switch change
+            toggleSwitch.addEventListener('change', function(e) {
                 if (e.target.checked) {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    localStorage.setItem('theme', 'dark');
+                    enableDarkMode();
                 } else {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                    localStorage.setItem('theme', 'light');
+                    disableDarkMode();
                 }
-            }
-
-            toggleSwitch.addEventListener('change', switchTheme, false);
-
-            const currentTheme = localStorage.getItem('theme');
-            if (currentTheme) {
-                document.documentElement.setAttribute('data-theme', currentTheme);
-                if (currentTheme === 'dark') {
-                    toggleSwitch.checked = true;
-                }
-            }
+            });
 
             // Debug toggle
             const debugToggle = document.getElementById('debug-toggle');
