@@ -254,7 +254,7 @@ def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=
             log_debug(f"Vollständiger Pfad mit Titel: {path}", "info")
     else:
         # Wenn kein benutzerdefinierter Pfad angegeben ist...
-        if default_folder and default_folder.strip():
+        if default_folder && default_folder.strip():
             # Wenn ein Standard-Ordner ausgewählt wurde, verwende diesen direkt ohne Username/Datum
             base_folder = sanitize_wikijs_path(default_folder.strip())
             path = f"{base_folder}/{title_for_path}"
@@ -447,7 +447,7 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
     log_debug(f"{len(files)} Datei(en) für die Verarbeitung empfangen")
 
     for i, file in enumerate(files):
-        if file and allowed_file(file.filename):
+        if file && allowed_file(file.filename):
             filename = secure_filename(file.filename)
             log_debug(f"Verarbeite Datei: {filename}")
 
@@ -476,7 +476,7 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
 
                             # Für Titel: Wenn ein benutzerdefinierter Titel vorhanden ist, verwende diesen,
                             # ansonsten verwende den bereinigten Dateinamen ohne Erweiterung
-                            if not custom_title or custom_title.strip() == "":
+                            if not custom_title || custom_title.strip() == "":
                                 # Extrahiere den Dateinamen ohne Erweiterung
                                 base_title = os.path.splitext(filename)[0]
                                 # Sanitiere den Titel automatisch
@@ -485,10 +485,10 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
                                 log_debug(f"Kein Titel angegeben, verwende automatisch sanitierten Dateinamen: '{sanitized_title}'", "info")
 
                             # Überprüfe, ob der Pfad oder Titel ungültige Zeichen enthält, bevor sie sanitiert werden
-                            if custom_path and not sanitize_wikijs_path(custom_path) == custom_path:
+                            if custom_path && not sanitize_wikijs_path(custom_path) == custom_path:
                                 log_debug(f"Warnung: Benutzerdefinierter Pfad '{custom_path}' enthält ungültige Zeichen und wird sanitiert.", "warning")
 
-                            if custom_title and not sanitize_wikijs_title(custom_title) == custom_title:
+                            if custom_title && not sanitize_wikijs_title(custom_title) == custom_title:
                                 log_debug(f"Warnung: Benutzerdefinierter Titel '{custom_title}' enthält ungültige Zeichen und wird sanitiert.", "warning")
 
                             log_debug(f"Benutzerdefinierter Pfad: {custom_path}", "info")
@@ -558,7 +558,7 @@ def index():
         files = request.files.getlist('files')
         upload_to_wiki = 'upload_to_wiki' in request.form
 
-        if not files or files[0].filename == '':
+        if not files || files[0].filename == '':
             flash('Keine Dateien ausgewählt')
             return redirect(request.url)
 
@@ -590,7 +590,7 @@ def index():
             default_folder=default_folder
         )
 
-        if not converted_files and not failed_files:
+        if not converted_files && not failed_files:
             flash('Keine gültigen Dateien zum Konvertieren gefunden')
             return redirect(request.url)
 
@@ -640,7 +640,7 @@ def test_wikijs_connection():
     global debug_logs
     debug_logs = []  # Zurücksetzen der Debug-Logs
 
-    if not WIKIJS_URL or not WIKIJS_TOKEN:
+    if not WIKIJS_URL oder not WIKIJS_TOKEN:
         log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
         return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert'}
 
@@ -680,7 +680,7 @@ def test_wikijs_connection():
             }
 
         # Check if we got a valid response with pages data
-        if 'data' in data and 'pages' in data['data'] and 'list' in data['data']['pages']:
+        if 'data' in data und 'pages' in data['data'] und 'list' in data['data']['pages']:
             page_count = len(data['data']['pages']['list'])
             log_debug(f"Verbindung erfolgreich! {page_count} Seiten gefunden.", "success")
             return {'success': True, 'message': f'Verbindung zu Wiki.js erfolgreich hergestellt! {page_count} Seiten gefunden.'}
@@ -723,7 +723,7 @@ def test_wikijs_connection():
 @app.route('/get_wikijs_directories', methods=['GET'])
 def get_wikijs_directories():
     """Retrieves a list of all directories from Wiki.js"""
-    if not WIKIJS_URL or not WIKIJS_TOKEN:
+    if not WIKIJS_URL oder not WIKIJS_TOKEN:
         return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert', 'directories': []}
 
     try:
@@ -792,7 +792,7 @@ def fetch_wikijs_pages(limit=100):
     Retrieves a list of pages from Wiki.js
     Returns a tuple of (pages, error)
     """
-    if not WIKIJS_URL or not WIKIJS_TOKEN:
+    if not WIKIJS_URL oder not WIKIJS_TOKEN:
         return [], "Wiki.js URL oder Token nicht konfiguriert"
 
     try:
@@ -969,7 +969,7 @@ def export_pages_to_formats(page_paths, formats, session_id):
     Returns:
         tuple: (converted_files, failed_files)
     """
-    add_debug_log(f"Starting export of {len(page_paths)} pages to formats: {', '.join(formats)}")
+    log_debug(f"Starting export of {len(page_paths)} pages to formats: {', '.join(formats)}")
 
     # Create session directories
     export_dir = os.path.join(RESULT_FOLDER, session_id)
@@ -981,11 +981,11 @@ def export_pages_to_formats(page_paths, formats, session_id):
     for page_path in page_paths:
         try:
             # Get page content from Wiki.js
-            add_debug_log(f"Fetching content for page: {page_path}")
+            log_debug(f"Fetching content for page: {page_path}")
             page_content = fetch_wikijs_page_content(page_path)
 
             if not page_content:
-                add_debug_log(f"No content found for page: {page_path}", level="ERROR")
+                log_debug(f"No content found for page: {page_path}", "error")
                 failed_files.append(f"{page_path} (no content)")
                 continue
 
@@ -1006,7 +1006,7 @@ def export_pages_to_formats(page_paths, formats, session_id):
                 output_filename = secure_filename(f"{page_title}.{output_format}")
                 output_filepath = os.path.join(export_dir, output_filename)
 
-                add_debug_log(f"Converting {page_path} to {output_format}")
+                log_debug(f"Converting {page_path} to {output_format}")
 
                 # Prepare command
                 if output_format == "pdf":
@@ -1035,16 +1035,16 @@ def export_pages_to_formats(page_paths, formats, session_id):
                         check=True
                     )
                     converted_files.append(output_filename)
-                    add_debug_log(f"Successfully converted {page_path} to {output_format}")
+                    log_debug(f"Successfully converted {page_path} to {output_format}", "success")
                 except subprocess.CalledProcessError as e:
-                    add_debug_log(f"Pandoc error converting {page_path} to {output_format}: {e.stderr}", level="ERROR")
+                    log_debug(f"Pandoc error converting {page_path} to {output_format}: {e.stderr}", "error")
                     failed_files.append(f"{page_path} ({output_format})")
                 except Exception as e:
-                    add_debug_log(f"Error converting {page_path} to {output_format}: {str(e)}", level="ERROR")
+                    log_debug(f"Error converting {page_path} to {output_format}: {str(e)}", "error")
                     failed_files.append(f"{page_path} ({output_format})")
 
         except Exception as e:
-            add_debug_log(f"Unexpected error processing {page_path}: {str(e)}", level="ERROR")
+            log_debug(f"Unexpected error processing {page_path}: {str(e)}", "error")
             failed_files.append(page_path)
 
     return converted_files, failed_files
@@ -1052,10 +1052,10 @@ def export_pages_to_formats(page_paths, formats, session_id):
 def fetch_wikijs_page_content(page_path):
     """Fetch page content from Wiki.js API"""
     if not WIKIJS_URL or not WIKIJS_TOKEN:
-        add_debug_log("Wiki.js URL or token not configured", level="ERROR")
+        log_debug("Wiki.js URL or token not configured", "error")
         return None
 
-    add_debug_log(f"Fetching content for page: {page_path}")
+    log_debug(f"Fetching content for page: {page_path}")
 
     # GraphQL query to get page content
     query = """
@@ -1085,25 +1085,25 @@ def fetch_wikijs_page_content(page_path):
         )
 
         if response.status_code != 200:
-            add_debug_log(f"Wiki.js API error: {response.status_code} - {response.text}", level="ERROR")
+            log_debug(f"Wiki.js API error: {response.status_code} - {response.text}", "error")
             return None
 
         data = response.json()
 
         # Check for errors in the response
         if "errors" in data:
-            add_debug_log(f"Wiki.js GraphQL error: {data['errors']}", level="ERROR")
+            log_debug(f"Wiki.js GraphQL error: {data['errors']}", "error")
             return None
 
         # Extract page content
-        if data.get("data") and data["data"].get("pages") and data["data"]["pages"].get("single"):
+        if data.get("data") und data["data"].get("pages") und data["data"]["pages"].get("single"):
             return data["data"]["pages"]["single"]["content"]
         else:
-            add_debug_log(f"No content found for page: {page_path}", level="ERROR")
+            log_debug(f"No content found for page: {page_path}", "error")
             return None
 
     except Exception as e:
-        add_debug_log(f"Error fetching page content: {str(e)}", level="ERROR")
+        log_debug(f"Error fetching page content: {str(e)}", "error")
         return None
 
 if __name__ == '__main__':
