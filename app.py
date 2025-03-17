@@ -1078,11 +1078,11 @@ def fetch_wikijs_page_content(page_path):
         'Authorization': f'Bearer {WIKIJS_TOKEN}'
     }
 
-    # Step 1: First query to find the page ID based on path
+    # Step 1: First query to list all pages and find the matching one
     find_page_query = """
-    query FindPage($path: String!) {
+    query ListPages {
       pages {
-        list(filter: $path) {
+        list {
           id
           path
           title
@@ -1091,49 +1091,46 @@ def fetch_wikijs_page_content(page_path):
     }
     """
 
-    variables = {
-        'path': page_path
-    }
-
     try:
-        log_debug(f"Step 1: Finding page ID for path: {page_path}", "api")
+        log_debug(f"Step 1: Listing pages to find ID for path: {page_path}", "api")
         response = requests.post(
             f"{WIKIJS_URL}/graphql",
-            json={'query': find_page_query, 'variables': variables},
+            json={'query': find_page_query},
             headers=headers
         )
 
         response_data = response.json()
-        log_debug(f"Find page response: {response_data}", "api")
 
         if 'errors' in response_data:
             error_messages = ', '.join([error.get('message', 'Unknown error') for error in response_data['errors']])
-            log_debug(f"GraphQL errors finding page: {error_messages}", "error")
+            log_debug(f"GraphQL errors listing pages: {error_messages}", "error")
             return None, None
 
-        # Extract the page ID from the response
+        # Extract pages from the response
         pages = response_data.get('data', {}).get('pages', {}).get('list', [])
         if not pages:
+            log_debug(f"No pages found", "error")
+            return None, None
+
+        log_debug(f"Retrieved {len(pages)} pages, looking for path: {page_path}", "api")
+
+        # Find the page with matching path
+        matching_page = None
+        for p in pages:
+            if p.get('path') == page_path:
+                matching_page = p
+                break
+
+        # If no exact match found
+        if not matching_page:
             log_debug(f"No page found with path: {page_path}", "error")
             return None, None
 
-        # Find the exact path match
-        page = None
-        for p in pages:
-            if p.get('path') == page_path:
-                page = p
-                break
-
-        # If no exact match found, use the first result
-        if not page and pages:
-            page = pages[0]
-            log_debug(f"No exact path match found, using first result: {page.get('path')}", "warning")
-
-        page_id = page.get('id')
-        title = page.get('title')
+        page_id = matching_page.get('id')
+        title = matching_page.get('title')
 
         if not page_id:
-            log_debug(f"Could not find page ID for path: {page_path}", "error")
+            log_debug(f"Page found but has no ID for path: {page_path}", "error")
             return None, title
 
         log_debug(f"Found page ID: {page_id} for path: {page_path}", "success")
@@ -1165,7 +1162,6 @@ def fetch_wikijs_page_content(page_path):
         )
 
         content_data = content_response.json()
-        log_debug(f"Content response: {content_data}", "api")
 
         if 'errors' in content_data:
             error_messages = ', '.join([error.get('message', 'Unknown error') for error in content_data['errors']])
