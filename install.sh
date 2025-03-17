@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#  DocFlow Installer
+# DocFlow Installer
 # Author: Joachim Mild
 # For Debian 12
 
@@ -35,6 +35,9 @@ VENV_DIR="$INSTALL_DIR/venv"
 SERVICE_NAME="tresorhaus-docflow"
 SERVICE_USER="docflow"
 TEMPLATES_DIR="$INSTALL_DIR/templates"
+UPLOADS_DIR="$INSTALL_DIR/uploads"
+EXPORTS_DIR="$INSTALL_DIR/exports"
+TEMP_DIR="$INSTALL_DIR/temp"
 
 # Wiki.js Konfiguration abfragen
 read -p "Wiki.js URL eingeben (z.B. http://wiki.example.com): " WIKIJS_URL
@@ -49,7 +52,7 @@ fi
 
 # SystemD Service Definition
 SERVICE_CONTENT="[Unit]
-Description= DocFlow Service
+Description=DocFlow Service
 After=network.target
 
 [Service]
@@ -83,6 +86,9 @@ log "Erstelle Installationsverzeichnis..."
 mkdir -p $INSTALL_DIR
 mkdir -p $INSTALL_DIR/static
 mkdir -p $TEMPLATES_DIR
+mkdir -p $UPLOADS_DIR
+mkdir -p $EXPORTS_DIR
+mkdir -p $TEMP_DIR
 
 # Kopiere Anwendungsdateien
 log "Kopiere Anwendungsdateien..."
@@ -137,6 +143,9 @@ chown -R $SERVICE_USER:$SERVICE_USER $INSTALL_DIR
 chmod -R 755 $INSTALL_DIR
 chmod 600 $INSTALL_DIR/.env
 chmod -R 755 $TEMPLATES_DIR
+chmod -R 770 $UPLOADS_DIR
+chmod -R 770 $EXPORTS_DIR
+chmod -R 770 $TEMP_DIR
 
 # SystemD Service erstellen
 log "Erstelle SystemD Service..."
@@ -164,7 +173,7 @@ apt-get clean
 apt-get autoremove -y
 
 # Installations-Zusammenfassung
-echo -e "\n${GREEN}===  DocFlow Installation ====${NC}"
+echo -e "\n${GREEN}=== DocFlow Installation ====${NC}"
 echo -e "Installationsverzeichnis: $INSTALL_DIR"
 echo -e "Service-Name: $SERVICE_NAME"
 echo -e "Service-Benutzer: $SERVICE_USER"
@@ -172,6 +181,8 @@ echo -e "Web-Interface: http://localhost:5000"
 echo -e "Wiki.js URL: $WIKIJS_URL"
 echo -e "Wiki.js External URL: $WIKIJS_EXTERNAL_URL"
 echo -e "Templates-Verzeichnis: $TEMPLATES_DIR"
+echo -e "Uploads-Verzeichnis: $UPLOADS_DIR"
+echo -e "Exports-Verzeichnis: $EXPORTS_DIR"
 echo -e "\nBefehle für die Verwaltung:"
 echo -e "  Status anzeigen:    sudo systemctl status $SERVICE_NAME"
 echo -e "  Service neustarten: sudo systemctl restart $SERVICE_NAME"
