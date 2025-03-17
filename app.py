@@ -7,15 +7,77 @@ Company: TresorHaus GmbH
 """
 import os
 import sys
+import tempfile
 from flask import Flask
+from dotenv import load_dotenv
 
 # Add the project root to the path to enable absolute imports
 project_root = os.path.dirname(os.path.abspath(__file__))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Use absolute imports instead of relative imports
-from config import SECRET_KEY
+# Lade Umgebungsvariablen
+# Versuche sowohl lokale .env als auch systemweite Umgebungsvariablen zu laden
+env_path = os.path.join(project_root, '.env')
+load_dotenv(dotenv_path=env_path)
+
+# Allgemeine Konfiguration
+UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'doc_converter_uploads')
+RESULT_FOLDER = os.path.join(tempfile.gettempdir(), 'doc_converter_results')
+SECRET_KEY = os.environ.get('SECRET_KEY', os.urandom(24))
+
+# Stellen Sie sicher, dass die Upload- und Result-Ordner existieren
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(RESULT_FOLDER, exist_ok=True)
+
+# Erlaubte Dateiformate
+ALLOWED_EXTENSIONS = {
+    'doc', 'docx', 'odt', 'rtf', 'tex', 'html', 'htm', 'epub',
+    'ppt', 'pptx', 'odp',
+    'rst', 'textile', 'wiki', 'dbk', 'xml', 'adoc', 'asciidoc', 'org'
+}
+
+# Wiki.js Konfiguration
+WIKIJS_URL = os.getenv('WIKIJS_URL')
+WIKIJS_EXTERNAL_URL = os.getenv('WIKIJS_EXTERNAL_URL')
+WIKIJS_TOKEN = os.getenv('WIKIJS_TOKEN')
+
+# Format-Mapping für Pandoc
+FORMAT_MAPPING = {
+    'doc': 'docx',
+    'docx': 'docx',
+    'odt': 'odt',
+    'rtf': 'rtf',
+    'tex': 'latex',
+    'html': 'html',
+    'htm': 'html',
+    'epub': 'epub',
+    'ppt': 'pptx',
+    'pptx': 'pptx',
+    'odp': 'odp',
+    'rst': 'rst',
+    'textile': 'textile',
+    'wiki': 'mediawiki',
+    'dbk': 'docbook',
+    'xml': 'docbook',
+    'adoc': 'asciidoc',
+    'asciidoc': 'asciidoc',
+    'org': 'org'
+}
+
+# Ausgabeformat-Mapping
+OUTPUT_FORMAT_MAPPING = {
+    'docx': 'docx',
+    'odt': 'odt',
+    'rtf': 'rtf',
+    'pdf': 'pdf',
+    'html': 'html',
+    'tex': 'latex',
+    'epub': 'epub',
+    'pptx': 'pptx'
+}
+
+# Import routes after config is defined to avoid circular imports
 from routes.main_routes import main_bp
 from routes.export_routes import export_bp
 from utils.file_utils import ensure_static_files_exist
