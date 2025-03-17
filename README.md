@@ -1,4 +1,4 @@
-# TresorHaus DocFlow
+# DocFlow
 
 <p align="center">
   <img src="static/logo-tresorhaus.svg" alt="TresorHaus Logo" width="300"/>
