@@ -7,10 +7,10 @@ Company: TresorHaus GmbH
 """
 import os
 from flask import Flask
-from config import SECRET_KEY
-from routes.main_routes import main_bp
-from routes.export_routes import export_bp
-from utils.file_utils import ensure_static_files_exist
+from .config import SECRET_KEY
+from .routes.main_routes import main_bp
+from .routes.export_routes import export_bp
+from .utils.file_utils import ensure_static_files_exist
 
 def create_app():
     """Erstellt und konfiguriert die Flask-App"""
