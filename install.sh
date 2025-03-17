@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TresorHaus DocFlow Installer
+#  DocFlow Installer
 # Author: Joachim Mild
 # For Debian 12
 
@@ -34,10 +34,15 @@ INSTALL_DIR="/opt/tresorhaus-docflow"
 VENV_DIR="$INSTALL_DIR/venv"
 SERVICE_NAME="tresorhaus-docflow"
 SERVICE_USER="docflow"
+TEMPLATES_DIR="$INSTALL_DIR/templates"
+
+# Wiki.js Konfiguration abfragen
+read -p "Wiki.js URL eingeben (z.B. http://wiki.example.com): " WIKIJS_URL
+read -p "Wiki.js API Token eingeben: " WIKIJS_TOKEN
 
 # SystemD Service Definition
 SERVICE_CONTENT="[Unit]
-Description=TresorHaus DocFlow Service
+Description= DocFlow Service
 After=network.target
 
 [Service]
@@ -70,17 +75,37 @@ fi
 log "Erstelle Installationsverzeichnis..."
 mkdir -p $INSTALL_DIR
 mkdir -p $INSTALL_DIR/static
+mkdir -p $TEMPLATES_DIR
 
 # Kopiere Anwendungsdateien
 log "Kopiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
 cp -r static/* $INSTALL_DIR/static/
 
+# Kopiere Template-Dateien, falls vorhanden
+log "Kopiere Template-Dateien..."
+if [ -d "templates" ]; then
+    cp -r templates/* $TEMPLATES_DIR/
+else
+    warning "Keine Template-Dateien gefunden. Erstelle leeres Template-Verzeichnis."
+fi
+
+# Erstelle .env Datei
+log "Erstelle .env Datei..."
+cat > $INSTALL_DIR/.env << EOF
+WIKIJS_URL=$WIKIJS_URL
+WIKIJS_TOKEN=$WIKIJS_TOKEN
+EOF
+
 # Erstelle requirements.txt falls nicht vorhanden
 if [ ! -f "requirements.txt" ]; then
     log "Erstelle requirements.txt..."
-    echo "Flask==2.3.3" > requirements.txt
-    echo "Werkzeug==2.3.7" >> requirements.txt
+    cat > requirements.txt << EOF
+Flask==2.3.3
+Werkzeug==2.3.7
+requests==2.31.0
+python-dotenv==1.0.0
+EOF
 fi
 
 # Python Virtual Environment erstellen
@@ -96,6 +121,8 @@ $VENV_DIR/bin/pip install -r requirements.txt
 log "Setze Berechtigungen..."
 chown -R $SERVICE_USER:$SERVICE_USER $INSTALL_DIR
 chmod -R 755 $INSTALL_DIR
+chmod 600 $INSTALL_DIR/.env
+chmod -R 755 $TEMPLATES_DIR
 
 # SystemD Service erstellen
 log "Erstelle SystemD Service..."
@@ -123,12 +150,16 @@ apt-get clean
 apt-get autoremove -y
 
 # Installations-Zusammenfassung
-echo -e "\n${GREEN}=== TresorHaus DocFlow Installation ====${NC}"
+echo -e "\n${GREEN}===  DocFlow Installation ====${NC}"
 echo -e "Installationsverzeichnis: $INSTALL_DIR"
 echo -e "Service-Name: $SERVICE_NAME"
 echo -e "Service-Benutzer: $SERVICE_USER"
 echo -e "Web-Interface: http://localhost:5000"
+echo -e "Wiki.js URL: $WIKIJS_URL"
+echo -e "Templates-Verzeichnis: $TEMPLATES_DIR"
 echo -e "\nBefehle für die Verwaltung:"
 echo -e "  Status anzeigen:    sudo systemctl status $SERVICE_NAME"
 echo -e "  Service neustarten: sudo systemctl restart $SERVICE_NAME"
 echo -e "  Logs anzeigen:      sudo journalctl -u $SERVICE_NAME -f"
+echo -e "\nWiki.js Konfiguration:"
+echo -e "  Konfigurationsdatei: $INSTALL_DIR/.env"

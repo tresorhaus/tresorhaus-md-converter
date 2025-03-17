@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TresorHaus DocFlow Updater
+#  DocFlow Updater
 # Author: Joachim Mild
 # For Debian 12
 
@@ -23,6 +23,19 @@ warning() {
     echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
 }
 
+# Funktion zum Verwalten der Backups (max 3)
+manage_backups() {
+    local base_dir="/opt/tresorhaus-docflow-backup"
+    local backup_count=$(find /opt -maxdepth 1 -name "tresorhaus-docflow-backup-*" -type d | wc -l)
+
+    # Wenn mehr als 3 Backups vorhanden sind, lösche die ältesten
+    if [ "$backup_count" -gt 3 ]; then
+        log "Es sind mehr als 3 Backups vorhanden. Lösche die ältesten..."
+        find /opt -maxdepth 1 -name "tresorhaus-docflow-backup-*" -type d | sort | head -n -3 | xargs rm -rf
+        log "Alte Backups wurden gelöscht. Nur die 3 neuesten werden behalten."
+    fi
+}
+
 # Prüfen, ob Script als root läuft
 if [ "$EUID" -ne 0 ]; then
     error "Bitte als root ausführen (sudo ./update.sh)"
@@ -34,11 +47,23 @@ INSTALL_DIR="/opt/tresorhaus-docflow"
 VENV_DIR="$INSTALL_DIR/venv"
 SERVICE_NAME="tresorhaus-docflow"
 BACKUP_DIR="/opt/tresorhaus-docflow-backup-$(date +%Y%m%d_%H%M%S)"
+TEMPLATES_DIR="$INSTALL_DIR/templates"
+
+# Wiki.js Konfiguration aktualisieren?
+read -p "Wiki.js Konfiguration aktualisieren? (j/n): " UPDATE_WIKIJS
+if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
+    read -p "Neue Wiki.js URL eingeben (leer lassen für keine Änderung): " NEW_WIKIJS_URL
+    read -p "Neuen Wiki.js API Token eingeben (leer lassen für keine Änderung): " NEW_WIKIJS_TOKEN
+fi
 
 # Backup erstellen
 log "Erstelle Backup..."
 mkdir -p $BACKUP_DIR
 cp -r $INSTALL_DIR/* $BACKUP_DIR/
+cp $INSTALL_DIR/.env $BACKUP_DIR/ 2>/dev/null || true
+
+# Verwalte Backups (behält nur die neuesten 3)
+manage_backups
 
 # Service stoppen
 log "Stoppe Service..."
@@ -49,6 +74,38 @@ log "Aktualisiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
 cp -r static/* $INSTALL_DIR/static/
 
+# Aktualisiere Template-Dateien
+log "Aktualisiere Template-Dateien..."
+if [ -d "templates" ]; then
+    # Stelle sicher, dass das Zielverzeichnis existiert
+    mkdir -p $TEMPLATES_DIR
+    cp -r templates/* $TEMPLATES_DIR/
+    log "Templates aktualisiert."
+else
+    warning "Keine Template-Dateien im Quellverzeichnis gefunden."
+fi
+
+# Aktualisiere Wiki.js Konfiguration wenn gewünscht
+if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
+    if [ -f "$INSTALL_DIR/.env" ]; then
+        source "$INSTALL_DIR/.env"
+    fi
+
+    if [ ! -z "$NEW_WIKIJS_URL" ]; then
+        WIKIJS_URL=$NEW_WIKIJS_URL
+    fi
+    if [ ! -z "$NEW_WIKIJS_TOKEN" ]; then
+        WIKIJS_TOKEN=$NEW_WIKIJS_TOKEN
+    fi
+
+    log "Aktualisiere Wiki.js Konfiguration..."
+    cat > $INSTALL_DIR/.env << EOF
+WIKIJS_URL=$WIKIJS_URL
+WIKIJS_TOKEN=$WIKIJS_TOKEN
+EOF
+    chmod 600 $INSTALL_DIR/.env
+fi
+
 # Aktualisiere Python-Pakete
 log "Aktualisiere Python-Pakete..."
 $VENV_DIR/bin/pip install --upgrade pip
@@ -58,6 +115,8 @@ $VENV_DIR/bin/pip install -r requirements.txt --upgrade
 log "Aktualisiere Berechtigungen..."
 chown -R docflow:docflow $INSTALL_DIR
 chmod -R 755 $INSTALL_DIR
+chmod 600 $INSTALL_DIR/.env
+chmod -R 755 $TEMPLATES_DIR
 
 # Service neustarten
 log "Starte Service neu..."
@@ -74,6 +133,7 @@ else
     error "Service konnte nicht gestartet werden!"
     error "Stelle Backup wieder her..."
     cp -r $BACKUP_DIR/* $INSTALL_DIR/
+    cp $BACKUP_DIR/.env $INSTALL_DIR/ 2>/dev/null || true
     systemctl start $SERVICE_NAME
     error "Bitte überprüfen Sie: 'systemctl status $SERVICE_NAME'"
 fi
