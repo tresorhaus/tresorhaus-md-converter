@@ -1,7 +1,8 @@
 #!/bin/bash
 
-#  DocFlow Installer
-# Author: Joachim Mild
+# DocFlow Installer
+# Created by: Joachim Mild
+# Copyright (c) 2025 TresorHaus GmbH
 # For Debian 12
 
 # Farben für Ausgaben
@@ -39,6 +40,13 @@ TEMPLATES_DIR="$INSTALL_DIR/templates"
 # Wiki.js Konfiguration abfragen
 read -p "Wiki.js URL eingeben (z.B. http://wiki.example.com): " WIKIJS_URL
 read -p "Wiki.js API Token eingeben: " WIKIJS_TOKEN
+read -p "Wiki.js External URL eingeben (für Links, meist identisch mit Wiki.js URL): " WIKIJS_EXTERNAL_URL
+
+# Wenn keine externe URL angegeben wurde, die normale URL verwenden
+if [ -z "$WIKIJS_EXTERNAL_URL" ]; then
+    WIKIJS_EXTERNAL_URL="$WIKIJS_URL"
+    warning "Keine externe URL angegeben. Verwende Wiki.js URL als externe URL."
+fi
 
 # SystemD Service Definition
 SERVICE_CONTENT="[Unit]
@@ -80,11 +88,35 @@ mkdir -p $TEMPLATES_DIR
 # Kopiere Anwendungsdateien
 log "Kopiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
-cp -r static/* $INSTALL_DIR/static/
+cp utils.py $INSTALL_DIR/
+
+# Kopiere neue Moduldateien
+if [ -f "wikijs.py" ]; then
+    log "Kopiere Wiki.js-Modul..."
+    cp wikijs.py $INSTALL_DIR/
+else
+    error "Modul wikijs.py fehlt!"
+fi
+
+if [ -f "export.py" ]; then
+    log "Kopiere Export-Modul..."
+    cp export.py $INSTALL_DIR/
+else
+    error "Modul export.py fehlt!"
+fi
+
+# Kopiere statische Dateien
+cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || warning "Keine statischen Dateien gefunden."
 
 # Kopiere Template-Dateien, falls vorhanden
 log "Kopiere Template-Dateien..."
 if [ -d "templates" ]; then
+    # Prüfen der neuen Export-Funktionalitäts-Dateien
+    if [ -f "templates/export.html" ] && [ -f "templates/export_results.html" ]; then
+        log "Neue Export-Funktionalität erkannt."
+    else
+        warning "Die neuen Export-Template-Dateien fehlen. Die Export-Funktionalität könnte beeinträchtigt sein."
+    fi
     cp -r templates/* $TEMPLATES_DIR/
 else
     warning "Keine Template-Dateien gefunden. Erstelle leeres Template-Verzeichnis."
@@ -95,6 +127,7 @@ log "Erstelle .env Datei..."
 cat > $INSTALL_DIR/.env << EOF
 WIKIJS_URL=$WIKIJS_URL
 WIKIJS_TOKEN=$WIKIJS_TOKEN
+WIKIJS_EXTERNAL_URL=$WIKIJS_EXTERNAL_URL
 EOF
 
 # Erstelle requirements.txt falls nicht vorhanden
@@ -156,6 +189,7 @@ echo -e "Service-Name: $SERVICE_NAME"
 echo -e "Service-Benutzer: $SERVICE_USER"
 echo -e "Web-Interface: http://localhost:5000"
 echo -e "Wiki.js URL: $WIKIJS_URL"
+echo -e "Wiki.js External URL: $WIKIJS_EXTERNAL_URL"
 echo -e "Templates-Verzeichnis: $TEMPLATES_DIR"
 echo -e "\nBefehle für die Verwaltung:"
 echo -e "  Status anzeigen:    sudo systemctl status $SERVICE_NAME"
@@ -163,3 +197,6 @@ echo -e "  Service neustarten: sudo systemctl restart $SERVICE_NAME"
 echo -e "  Logs anzeigen:      sudo journalctl -u $SERVICE_NAME -f"
 echo -e "\nWiki.js Konfiguration:"
 echo -e "  Konfigurationsdatei: $INSTALL_DIR/.env"
+echo -e "\nFunktionen:"
+echo -e "  - Dokument zu Wiki.js: Konvertierung von Dokumenten zu Markdown mit Upload zu Wiki.js"
+echo -e "  - Wiki.js zu Dokument: Export von Wiki.js-Seiten in verschiedene Dokumentformate"

@@ -1,9 +1,14 @@
 <!DOCTYPE html>
+<!--
+    DocFlow - Wiki.js Export Ergebnisse
+    Created by: Joachim Mild
+    Copyright (c) 2025 TresorHaus GmbH
+-->
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> DocFlow - Konvertierungsergebnisse</title>
+    <title>DocFlow - Wiki.js Export Ergebnisse</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
         body {
@@ -20,9 +25,9 @@
             max-width: 700px;
             margin: 0 auto;
             background-color: #fff;
-            padding: 15px;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
             transition: background-color 0.3s, box-shadow 0.3s;
         }
         h1, h2, h3 {
@@ -394,37 +399,37 @@
             <img src="{{ url_for('static', filename='logo-tresorhaus.svg') }}" alt="TresorHaus Logo">
         </div>
 
-        <h1>DocFlow - Markdown Converter for Wiki.js</h1>
-        <p>Ergebnisse Ihrer Dokumentkonvertierung</p>
+        <h1>DocFlow - Wiki.js Export</h1>
+        <p>Ergebnisse Ihres Wiki.js-Exports</p>
 
         <div class="summary-box">
             <h3>Zusammenfassung</h3>
-            <p>{{ converted_files|length }} Datei(en) erfolgreich konvertiert, {{ failed_files|length }} Fehler.</p>
+            <p>{{ converted_files|length }} Datei(en) erfolgreich exportiert, {{ failed_files|length }} Fehler.</p>
             <p>
                 <a href="{{ url_for('download_results', session_id=session_id) }}" class="btn">Alle Dateien als ZIP herunterladen</a>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary">Zurück zur Startseite</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Zurück zum Export</a>
             </p>
         </div>
 
         {% if wiki_requested %}
         <div class="wiki-status {% if wiki_urls %}wiki-success{% endif %}">
-            <h3>Wiki.js Upload Status</h3>
+            <h3>Wiki.js Export Status</h3>
             {% if wiki_urls %}
-                <p>{{ wiki_urls|length }} Datei(en) wurden erfolgreich zu Wiki.js hochgeladen.</p>
+                <p>{{ wiki_urls|length }} Seite(n) wurden erfolgreich von Wiki.js exportiert.</p>
                 {% if wiki_urls|length < converted_files|length %}
-                    <p>{{ converted_files|length - wiki_urls|length }} Datei(en) konnten nicht hochgeladen werden. Siehe Debug-Log für Details.</p>
+                    <p>{{ converted_files|length - wiki_urls|length }} Seite(n) konnten nicht exportiert werden. Siehe Debug-Log für Details.</p>
                 {% endif %}
             {% else %}
-                <p>Es konnten keine Dateien zu Wiki.js hochgeladen werden.</p>
+                <p>Es konnten keine Seiten von Wiki.js exportiert werden.</p>
                 {% if not api_token_exists %}
-                    <p class="error-badge">Wiki.js API Token nicht konfiguriert.</p>
+                    <p class="error-badge">Wiki.js API Token nicht konfiguriert oder ungültig.</p>
                 {% endif %}
             {% endif %}
         </div>
         {% endif %}
 
         {% if converted_files %}
-        <h3>Erfolgreich konvertierte Dateien</h3>
+        <h3>Erfolgreich exportierte Dateien</h3>
         <ul class="result-list">
             {% for filename in converted_files %}
             <li>
@@ -443,11 +448,16 @@
         {% endif %}
 
         {% if failed_files %}
-        <h3>Fehlerhafte Konvertierungen</h3>
+        <h3>Fehlerhafte Exporte</h3>
         <ul class="result-list">
-            {% for filename in failed_files %}
+            {% for filename, error_msg in failed_files.items() %}
             <li>
-                <div class="filename">{{ filename }} <span class="error-badge">✗</span></div>
+                <div class="filename">
+                    {{ filename }} <span class="error-badge">✗</span>
+                    {% if error_msg %}
+                    <br/><small class="error-badge">{{ error_msg }}</small>
+                    {% endif %}
+                </div>
             </li>
             {% endfor %}
         </ul>

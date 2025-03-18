@@ -1,7 +1,8 @@
 #!/bin/bash
 
-#  DocFlow Updater
-# Author: Joachim Mild
+# DocFlow Updater
+# Created by: Joachim Mild
+# Copyright (c) 2025 TresorHaus GmbH
 # For Debian 12
 
 # Farben für Ausgaben
@@ -54,6 +55,7 @@ read -p "Wiki.js Konfiguration aktualisieren? (j/n): " UPDATE_WIKIJS
 if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
     read -p "Neue Wiki.js URL eingeben (leer lassen für keine Änderung): " NEW_WIKIJS_URL
     read -p "Neuen Wiki.js API Token eingeben (leer lassen für keine Änderung): " NEW_WIKIJS_TOKEN
+    read -p "Neue Wiki.js External URL eingeben (leer lassen für keine Änderung): " NEW_WIKIJS_EXTERNAL_URL
 fi
 
 # Backup erstellen
@@ -72,68 +74,118 @@ systemctl stop $SERVICE_NAME
 # Aktualisiere Anwendungsdateien
 log "Aktualisiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
-cp -r static/* $INSTALL_DIR/static/
+cp utils.py $INSTALL_DIR/
+
+# Aktualisiere Moduldateien
+if [ -f "wikijs.py" ]; then
+    log "Aktualisiere Wiki.js-Modul..."
+    cp wikijs.py $INSTALL_DIR/
+else
+    warning "Modul wikijs.py nicht gefunden! Existierende Datei wird nicht überschrieben."
+fi
+
+if [ -f "export.py" ]; then
+    log "Aktualisiere Export-Modul..."
+    cp export.py $INSTALL_DIR/
+else
+    warning "Modul export.py nicht gefunden! Existierende Datei wird nicht überschrieben."
+fi
+
+# Kopiere statische Dateien
+cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || warning "Keine statischen Dateien gefunden."
 
 # Aktualisiere Template-Dateien
 log "Aktualisiere Template-Dateien..."
 if [ -d "templates" ]; then
+    # Prüfe ob die Export-Funktionalitäts-Templates existieren
+    if [ -f "templates/export.html" ] && [ -f "templates/export_results.html" ]; then
+        log "Export-Funktionalität erkannt."
+    else
+        warning "Die Export-Template-Dateien fehlen. Die Export-Funktionalität könnte beeinträchtigt sein."
+    fi
+
     # Stelle sicher, dass das Zielverzeichnis existiert
     mkdir -p $TEMPLATES_DIR
+
+    # Kopiere alle Template-Dateien
     cp -r templates/* $TEMPLATES_DIR/
-    log "Templates aktualisiert."
 else
-    warning "Keine Template-Dateien im Quellverzeichnis gefunden."
+    warning "Keine Template-Dateien gefunden."
 fi
 
-# Aktualisiere Wiki.js Konfiguration wenn gewünscht
+# Update requirements.txt und installiere neue Abhängigkeiten
+if [ -f "requirements.txt" ]; then
+    log "Aktualisiere Python-Abhängigkeiten..."
+    $VENV_DIR/bin/pip install --upgrade -r requirements.txt
+fi
+
+# Update .env wenn Wiki.js Konfiguration aktualisiert werden soll
 if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
-    if [ -f "$INSTALL_DIR/.env" ]; then
-        source "$INSTALL_DIR/.env"
-    fi
-
-    if [ ! -z "$NEW_WIKIJS_URL" ]; then
-        WIKIJS_URL=$NEW_WIKIJS_URL
-    fi
-    if [ ! -z "$NEW_WIKIJS_TOKEN" ]; then
-        WIKIJS_TOKEN=$NEW_WIKIJS_TOKEN
-    fi
-
     log "Aktualisiere Wiki.js Konfiguration..."
+
+    # Lade aktuelle .env Datei
+    source $INSTALL_DIR/.env
+
+    # Aktualisiere nur die angegebenen Werte
+    if [ ! -z "$NEW_WIKIJS_URL" ]; then
+        WIKIJS_URL="$NEW_WIKIJS_URL"
+        log "Wiki.js URL aktualisiert zu: $WIKIJS_URL"
+    fi
+
+    if [ ! -z "$NEW_WIKIJS_TOKEN" ]; then
+        WIKIJS_TOKEN="$NEW_WIKIJS_TOKEN"
+        log "Wiki.js API Token aktualisiert"
+    fi
+
+    if [ ! -z "$NEW_WIKIJS_EXTERNAL_URL" ]; then
+        WIKIJS_EXTERNAL_URL="$NEW_WIKIJS_EXTERNAL_URL"
+        log "Wiki.js External URL aktualisiert zu: $WIKIJS_EXTERNAL_URL"
+    fi
+
+    # Schreibe aktualisierte .env Datei
     cat > $INSTALL_DIR/.env << EOF
 WIKIJS_URL=$WIKIJS_URL
 WIKIJS_TOKEN=$WIKIJS_TOKEN
+WIKIJS_EXTERNAL_URL=$WIKIJS_EXTERNAL_URL
 EOF
-    chmod 600 $INSTALL_DIR/.env
 fi
 
-# Aktualisiere Python-Pakete
-log "Aktualisiere Python-Pakete..."
-$VENV_DIR/bin/pip install --upgrade pip
-$VENV_DIR/bin/pip install -r requirements.txt --upgrade
+# Service-User auslesen
+SERVICE_USER=$(grep "User=" /etc/systemd/system/$SERVICE_NAME.service | cut -d'=' -f2)
 
-# Berechtigungen aktualisieren
-log "Aktualisiere Berechtigungen..."
-chown -R docflow:docflow $INSTALL_DIR
+# Setze Berechtigungen
+log "Setze Berechtigungen..."
+chown -R $SERVICE_USER:$SERVICE_USER $INSTALL_DIR
 chmod -R 755 $INSTALL_DIR
 chmod 600 $INSTALL_DIR/.env
-chmod -R 755 $TEMPLATES_DIR
 
-# Service neustarten
+# Service neu starten
 log "Starte Service neu..."
-systemctl daemon-reload
 systemctl start $SERVICE_NAME
+sleep 2
 
-# Status überprüfen
+# Status prüfen
 if systemctl is-active --quiet $SERVICE_NAME; then
     log "Update erfolgreich abgeschlossen!"
-    log "Service läuft unter: http://localhost:5000"
     log "Service-Status: $(systemctl status $SERVICE_NAME | grep Active)"
-    log "Backup wurde erstellt unter: $BACKUP_DIR"
 else
     error "Service konnte nicht gestartet werden!"
-    error "Stelle Backup wieder her..."
-    cp -r $BACKUP_DIR/* $INSTALL_DIR/
-    cp $BACKUP_DIR/.env $INSTALL_DIR/ 2>/dev/null || true
-    systemctl start $SERVICE_NAME
     error "Bitte überprüfen Sie: 'systemctl status $SERVICE_NAME'"
+    error "Falls nötig, stellen Sie das Backup von $BACKUP_DIR wieder her."
 fi
+
+# Zusammenfassung
+echo -e "\n${GREEN}=== DocFlow Update ====${NC}"
+echo -e "Update-Zeitpunkt: $(date)"
+echo -e "Backup-Verzeichnis: $BACKUP_DIR"
+echo -e "Web-Interface: http://localhost:5000"
+
+if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
+    echo -e "Wiki.js URL: $WIKIJS_URL"
+    echo -e "Wiki.js External URL: $WIKIJS_EXTERNAL_URL"
+fi
+
+echo -e "\nBefehle für die Verwaltung:"
+echo -e "  Status anzeigen:    sudo systemctl status $SERVICE_NAME"
+echo -e "  Service neustarten: sudo systemctl restart $SERVICE_NAME"
+echo -e "  Logs anzeigen:      sudo journalctl -u $SERVICE_NAME -f"
