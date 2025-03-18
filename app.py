@@ -17,7 +17,6 @@ from flask import Flask, request, render_template_string, send_file, redirect, u
 from werkzeug.utils import secure_filename
 import zipfile
 import io
-import requests
 from datetime import datetime
 from dotenv import load_dotenv
 import re
@@ -27,6 +26,10 @@ from utils import (
     allowed_file, sanitize_wikijs_path, sanitize_wikijs_title,
     sanitize_filename, clean_markdown_content, ensure_static_files_exist
 )
+
+# Import modules for Wiki.js and export functionality
+import wikijs
+import export
 
 # Lade Umgebungsvariablen
 load_dotenv()
@@ -121,189 +124,6 @@ def log_debug(message, log_type='info'):
     })
     print(f"[{timestamp}] {log_type.upper()}: {message}")
 
-def upload_to_wikijs(content, title, session_id, custom_path=None, custom_title=None, username=None, default_folder=None):
-    """Lädt eine Markdown-Datei in Wiki.js hoch"""
-    if not WIKIJS_URL or not WIKIJS_TOKEN:
-        log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
-        return False, None
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    date_with_time = datetime.now().strftime("%Y-%m-%d-%H%M")
-
-    # Entferne .md Erweiterung aus dem Titel wenn vorhanden
-    title_without_extension = title
-    if title.lower().endswith('.md'):
-        title_without_extension = title[:-3]
-
-    # Verwende den benutzerdefinierten Titel, wenn angegeben, und sanitiere ihn
-    if custom_title and custom_title.strip():
-        original_title = custom_title.strip()
-        title_without_extension = sanitize_wikijs_title(original_title)
-        if original_title != title_without_extension:
-            log_debug(f"Titel wurde sanitiert: '{original_title}' → '{title_without_extension}'", "info")
-    else:
-        title_without_extension = sanitize_wikijs_title(title_without_extension)
-
-    # Für die Verwendung im Pfad: Ersetze Leerzeichen mit Bindestrichen
-    title_for_path = title_without_extension.replace(" ", "-")
-
-    # Berechnete Standardpfad mit Username und Datum
-    safe_username = sanitize_wikijs_path(username) if username else "anonymous"
-    base_folder = "DocFlow"  # Standard-Basis-Ordner
-    default_path = f"{base_folder}/{safe_username}/{date_with_time}"
-    sanitized_default_path = sanitize_wikijs_path(default_path)
-
-    # Verwende den benutzerdefinierten Pfad, wenn angegeben, sonst den Standard-Pfad, und sanitiere ihn
-    if custom_path and custom_path.strip():
-        # Entferne führende und folgende Schrägstriche für Konsistenz
-        original_path = custom_path.strip().strip('/')
-        path = sanitize_wikijs_path(original_path)
-        if original_path != path:
-            log_debug(f"Pfad wurde sanitiert: '{original_path}' → '{path}'", "info")
-
-        # Wenn ein benutzerdefinierter Pfad angegeben ist, verwende diesen direkt
-        # Füge nur den Titel hinzu, wenn er nicht bereits Teil des Pfades ist
-        if not path.endswith(f"/{title_for_path}") and not path.endswith(title_for_path):
-            path = f"{path}/{title_for_path}"
-            log_debug(f"Vollständiger Pfad mit Titel: {path}", "info")
-    else:
-        # Wenn kein benutzerdefinierter Pfad angegeben ist...
-        if default_folder and default_folder.strip():
-            # Wenn ein Standard-Ordner ausgewählt wurde, verwende diesen direkt ohne Username/Datum
-            base_folder = sanitize_wikijs_path(default_folder.strip())
-            path = f"{base_folder}/{title_for_path}"
-            log_debug(f"Verwende Standard-Ordner direkt: {path}", "info")
-        else:
-            # Erstelle einen Standard-Pfad mit Benutzernamen und Datum+Uhrzeit
-            path = f"{sanitized_default_path}/{title_for_path}"
-            log_debug(f"Kein spezifischer Pfad angegeben. Verwende Standard-Pfad: {sanitized_default_path}/{title_for_path}", "info")
-            log_debug(f"Info: Falls Sie keinen Pfad angeben, werden Ihre Dateien unter '{sanitized_default_path}/[Dateiname]' gespeichert.", "info")
-
-    # Endgültige Prüfung und Sanitierung des Pfades
-    path = sanitize_wikijs_path(path)
-
-    # Bereinige den Markdown-Inhalt von typischen Konvertierungsartefakten
-    cleaned_content = clean_markdown_content(content)
-    log_debug(f"Markdown-Inhalt bereinigt. {len(content) - len(cleaned_content)} Zeichen entfernt.", "info")
-
-    log_debug(f"Starte Upload zu Wiki.js: {title_without_extension}", "api")
-    log_debug(f"Ziel-Pfad: {path}", "api")
-
-    headers = {
-        'Authorization': f'Bearer {WIKIJS_TOKEN}',
-        'Content-Type': 'application/json'
-    }
-
-    # Aktualisierte GraphQL mutation basierend auf dem funktionierenden curl-Beispiel
-    mutation = """
-    mutation Page ($content: String!, $description: String!, $editor: String!, $isPublished: Boolean!, $isPrivate: Boolean!, $locale: String!, $path: String!, $tags: [String]!, $title: String!) {
-      pages {
-        create (content: $content, description: $description, editor: $editor, isPublished: $isPublished, isPrivate: $isPrivate, locale: $locale, path: $path, tags: $tags, title: $title) {
-          responseResult {
-            succeeded,
-            errorCode,
-            slug,
-            message
-          },
-          page {
-            id,
-            path,
-            title
-          }
-        }
-      }
-    }
-    """
-
-    variables = {
-        'content': cleaned_content,  # Verwende den bereinigten Inhalt statt des Originals
-        'description': f'Automatisch erstellt durch  DocFlow am {timestamp}',
-        'editor': 'markdown',
-        'isPublished': True,
-        'isPrivate': False,  # Hinzugefügt entsprechend dem curl-Beispiel
-        'locale': 'de',
-        'path': path,
-        'tags': ['DocFlow', 'Automatisch'],
-        'title': title_without_extension
-    }
-
-    # Erstelle die vollständige Request-Payload für Debug-Zwecke
-    request_payload = {
-        'query': mutation,
-        'variables': variables
-    }
-
-    # Log vollständige Request-Details für Debugging
-    log_debug(f"Wiki.js URL: {WIKIJS_URL}", "api")
-    log_debug(f"GraphQL Mutation: {mutation.strip()}", "api")
-
-    # Logge Variablen mit limitiertem Content für Übersichtlichkeit
-    debug_variables = variables.copy()
-    if len(content) > 200:
-        debug_variables['content'] = content[:200] + '... [gekürzt]'
-    log_debug(f"Variablen: {debug_variables}", "api")
-
-    # Logge die ersten 200 Zeichen des Inhalts
-    log_debug(f"Inhalt (gekürzt): {content[:200]}...", "api")
-
-    # Logge die vollständige Länge des Inhalts
-    log_debug(f"Gesamte Inhaltslänge: {len(content)} Zeichen", "api")
-
-    try:
-        log_debug(f"Sende Wiki.js Request an: {WIKIJS_URL}/graphql", "api")
-
-        # POST mit json payload für die Mutation
-        response = requests.post(
-            f'{WIKIJS_URL}/graphql',
-            headers=headers,
-            json=request_payload
-        )
-
-        log_debug(f"Status Code: {response.status_code}", "api")
-
-        # Versuchen, den Response-Body zu loggen
-        try:
-            response_text = response.text
-            if len(response_text) > 500:
-                log_debug(f"Response (gekürzt): {response_text[:500]}...", "api")
-            else:
-                log_debug(f"Response: {response_text}", "api")
-        except:
-            log_debug("Konnte Response-Body nicht lesen", "error")
-
-        response.raise_for_status()
-        data = response.json()
-
-        if 'errors' in data:
-            error_msg = str(data['errors'])
-            log_debug(f"GraphQL Fehler: {error_msg}", "error")
-            return False, None
-
-        # Aktualisierte Überprüfung der Antwort basierend auf dem curl-Beispiel
-        result = data.get('data', {}).get('pages', {}).get('create', {}).get('responseResult', {})
-        if result.get('succeeded'):
-            # Extrahiere die page_id und den tatsächlichen Pfad aus der Antwort
-            page = data.get('data', {}).get('pages', {}).get('create', {}).get('page', {})
-            page_id = page.get('id')
-            actual_path = page.get('path')
-
-            # Konstruiere die vollständige Wiki.js URL zur Seite mit der externen URL statt der API-URL
-            wiki_url = f"{WIKIJS_EXTERNAL_URL}/{actual_path}"
-            log_debug(f"Wiki.js Seite erfolgreich erstellt: {wiki_url} (ID: {page_id})", "success")
-            return True, wiki_url
-        else:
-            error_message = result.get('message', 'Unbekannter Fehler')
-            error_code = result.get('errorCode', 'Kein Code')
-            log_debug(f"Wiki.js Fehler: {error_message} (Code: {error_code})", "error")
-            return False, None
-
-    except Exception as e:
-        log_debug(f"Fehler beim Upload zu Wiki.js: {str(e)}", "error")
-        log_debug(f"Exception Details: {type(e).__name__}", "error")
-        import traceback
-        log_debug(f"Traceback: {traceback.format_exc()}", "error")
-        return False, None
-
 def convert_to_markdown(input_path, output_path):
     """Konvertiert eine Datei in Markdown mithilfe von pandoc"""
     input_format = get_input_format(input_path)
@@ -361,7 +181,7 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
     log_debug(f"{len(files)} Datei(en) für die Verarbeitung empfangen")
 
     for i, file in enumerate(files):
-        if file and allowed_file(file.filename):
+        if file and allowed_file(file.filename, ALLOWED_EXTENSIONS):
             filename = secure_filename(file.filename)
             log_debug(f"Verarbeite Datei: {filename}")
 
@@ -408,14 +228,22 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
                             log_debug(f"Benutzerdefinierter Pfad: {custom_path}", "info")
                             log_debug(f"Benutzerdefinierter Titel: {custom_title}", "info")
 
-                            success, wiki_url = upload_to_wikijs(
+                            # Verwende die WikiJS-Funktion für den Upload
+                            success, wiki_url = wikijs.upload_content(
                                 content,
                                 output_filename,
                                 session_id,
+                                WIKIJS_URL,
+                                WIKIJS_TOKEN,
                                 custom_path=custom_path,
                                 custom_title=custom_title,
                                 username=username,
-                                default_folder=default_folder
+                                default_folder=default_folder,
+                                debug_logger=log_debug,
+                                external_url=WIKIJS_EXTERNAL_URL,
+                                sanitize_wikijs_path_fn=sanitize_wikijs_path,
+                                sanitize_wikijs_title_fn=sanitize_wikijs_title,
+                                clean_markdown_content_fn=clean_markdown_content
                             )
 
                             if success:
@@ -436,21 +264,6 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
 
     log_debug(f"Verarbeitung abgeschlossen: {len(converted_files)} konvertiert, {len(failed_files)} fehlgeschlagen")
     return converted_files, failed_files, wiki_urls
-
-def create_zip_file(session_id):
-    """Erstellt eine ZIP-Datei mit allen konvertierten Markdown-Dateien"""
-    result_dir = os.path.join(RESULT_FOLDER, session_id)
-    memory_file = io.BytesIO()
-
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for root, _, files in os.walk(result_dir):
-            for file in files:
-                file_path = os.path.join(root, file)
-                rel_path = os.path.relpath(file_path, result_dir)
-                zf.write(file_path, rel_path)
-
-    memory_file.seek(0)
-    return memory_file
 
 def cleanup_session(session_id):
     """Bereinigt die temporären Dateien einer Session"""
@@ -524,7 +337,7 @@ def index():
 
 @app.route('/download/<session_id>', methods=['GET'])
 def download_results(session_id):
-    memory_file = create_zip_file(session_id)
+    memory_file = export.create_zip_file(session_id, RESULT_FOLDER)
     cleanup_session(session_id)
 
     return send_file(
@@ -554,223 +367,18 @@ def test_wikijs_connection():
     global debug_logs
     debug_logs = []  # Zurücksetzen der Debug-Logs
 
-    if not WIKIJS_URL or not WIKIJS_TOKEN:
-        log_debug("Wiki.js URL oder Token nicht konfiguriert", "error")
-        return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert'}
-
-    # Test connection using pages list query
-    try:
-        # Use a simple query to list pages
-        test_query = "{pages{list{id,title,path,contentType}}}"
-        log_debug(f"Teste Wiki.js Verbindung zu: {WIKIJS_URL}", "api")
-
-        # URL encode the query parameter
-        import urllib.parse
-        encoded_query = urllib.parse.quote(test_query)
-
-        headers = {
-            'Authorization': f'Bearer {WIKIJS_TOKEN}'
-        }
-        log_debug(f"Sende GET-Anfrage an: {WIKIJS_URL}/graphql/pages/list", "api")
-
-        # Use GET request to the pages list endpoint with query as URL parameter
-        response = requests.get(
-            f'{WIKIJS_URL}/graphql/pages/list?query={encoded_query}',
-            headers=headers
-        )
-
-        # Log detailed debug info
-        log_debug(f"Status Code: {response.status_code}", "api")
-
-        response.raise_for_status()
-        data = response.json()
-
-        if 'errors' in data:
-            error_msg = data['errors'][0].get('message', 'Unbekannter GraphQL-Fehler')
-            log_debug(f"API-Fehler: {error_msg}", "error")
-            return {
-                'success': False,
-                'message': f"API-Fehler: {error_msg}\nBitte überprüfen Sie den API-Token."
-            }
-
-        # Check if we got a valid response with pages data
-        if 'data' in data and 'pages' in data['data'] and 'list' in data['data']['pages']:
-            page_count = len(data['data']['pages']['list'])
-            log_debug(f"Verbindung erfolgreich! {page_count} Seiten gefunden.", "success")
-            return {'success': True, 'message': f'Verbindung zu Wiki.js erfolgreich hergestellt! {page_count} Seiten gefunden.'}
-        else:
-            log_debug("Unerwartetes Antwortformat von Wiki.js", "error")
-            return {
-                'success': False,
-                'message': 'Unerwartetes Antwortformat von Wiki.js. Bitte überprüfen Sie die API-Konfiguration.'
-            }
-
-    except requests.exceptions.ConnectionError:
-        log_debug(f"Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}", "error")
-        return {
-            'success': False,
-            'message': f'Verbindungsfehler: Server nicht erreichbar unter {WIKIJS_URL}'
-        }
-    except requests.exceptions.HTTPError as e:
-        log_debug(f"HTTP-Fehler {e.response.status_code}: {e.response.text}", "error")
-        if e.response.status_code == 401:
-            return {
-                'success': False,
-                'message': 'Authentifizierungsfehler: Ungültiger API-Token'
-            }
-        elif e.response.status_code == 400:
-            return {
-                'success': False,
-                'message': 'API-Fehler: Ungültige Anfrage. Bitte überprüfen Sie die Wiki.js-URL und den API-Token'
-            }
-        return {
-            'success': False,
-            'message': f'HTTP-Fehler {e.response.status_code}: {e.response.text}'
-        }
-    except Exception as e:
-        log_debug(f"Unerwarteter Fehler: {str(e)}", "error")
-        return {
-            'success': False,
-            'message': f'Unerwarteter Fehler: {str(e)}\nBitte überprüfen Sie die Konsole für weitere Details.'
-        }
+    # Use the wikijs module function for testing connection
+    result = wikijs.test_connection(WIKIJS_URL, WIKIJS_TOKEN, log_debug)
+    return result
 
 @app.route('/get_wikijs_directories', methods=['GET'])
 def get_wikijs_directories():
     """Retrieves a list of all directories from Wiki.js"""
-    if not WIKIJS_URL or not WIKIJS_TOKEN:
-        return {'success': False, 'message': 'Wiki.js URL oder Token nicht konfiguriert', 'directories': []}
-
-    try:
-        # GraphQL query to get all pages which will be used to extract unique directories
-        query = """
-        {
-          pages {
-            list {
-              path
-            }
-          }
-        }
-        """
-
-        headers = {
-            'Authorization': f'Bearer {WIKIJS_TOKEN}',
-            'Content-Type': 'application/json'
-        }
-
-        response = requests.post(
-            f'{WIKIJS_URL}/graphql',
-            headers=headers,
-            json={'query': query}
-        )
-
-        response.raise_for_status()
-        data = response.json()
-
-        if 'errors' in data:
-            error_msg = str(data['errors'])
-            return {'success': False, 'message': f'GraphQL Error: {error_msg}', 'directories': []}
-
-        # Extract all paths from the pages
-        pages = data.get('data', {}).get('pages', {}).get('list', [])
-        all_paths = [page['path'] for page in pages if 'path' in page]
-
-        # Extract unique directories from paths
-        directories = set()
-        for path in all_paths:
-            # Split the path and reconstruct directories
-            parts = path.split('/')
-            for i in range(1, len(parts)):
-                directories.add('/'.join(parts[:i]))
-
-        # Convert set to list and sort
-        directory_list = sorted(list(directories))
-
-        # Add root directory if it doesn't exist
-        if '' not in directory_list:
-            directory_list.insert(0, '')
-
-        return {'success': True, 'directories': directory_list}
-
-    except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        return {
-            'success': False,
-            'message': f'Error fetching directories: {str(e)}',
-            'error_details': error_trace,
-            'directories': []
-        }
-
-def fetch_wikijs_pages(limit=100):
-    """
-    Retrieves a list of pages from Wiki.js
-    Returns a tuple of (pages, error)
-    """
-    if not WIKIJS_URL or not WIKIJS_TOKEN:
-        return [], "Wiki.js URL oder Token nicht konfiguriert"
-
-    try:
-        # GraphQL query to get all pages with id, title, path, and contentType
-        query = f"""
-        {{
-          pages {{
-            list(limit: {limit}) {{
-              id
-              title
-              path
-              contentType
-            }}
-          }}
-        }}
-        """
-
-        headers = {
-            'Authorization': f'Bearer {WIKIJS_TOKEN}',
-            'Content-Type': 'application/json'
-        }
-
-        log_debug(f"Fetching Wiki.js pages from: {WIKIJS_URL}", "api")
-
-        response = requests.post(
-            f'{WIKIJS_URL}/graphql',
-            headers=headers,
-            json={'query': query}
-        )
-
-        response.raise_for_status()
-        data = response.json()
-
-        if 'errors' in data:
-            error_msg = str(data['errors'])
-            log_debug(f"GraphQL Error when fetching pages: {error_msg}", "error")
-            return [], f"GraphQL Error: {error_msg}"
-
-        # Extract pages from response
-        pages = data.get('data', {}).get('pages', {}).get('list', [])
-        log_debug(f"Successfully fetched {len(pages)} pages from Wiki.js", "success")
-
-        # Filter out only markdown content type pages
-        markdown_pages = [page for page in pages if page.get('contentType') == 'markdown']
-
-        return markdown_pages, None
-
-    except requests.exceptions.ConnectionError as e:
-        error_msg = f"Connection error: Could not connect to Wiki.js at {WIKIJS_URL}"
-        log_debug(error_msg, "error")
-        return [], error_msg
-    except requests.exceptions.HTTPError as e:
-        error_msg = f"HTTP error: {str(e)}"
-        log_debug(error_msg, "error")
-        return [], error_msg
-    except Exception as e:
-        error_msg = f"Error fetching Wiki.js pages: {str(e)}"
-        log_debug(error_msg, "error")
-        import traceback
-        log_debug(f"Traceback: {traceback.format_exc()}", "error")
-        return [], error_msg
+    # Use the wikijs module function
+    return wikijs.get_directories(WIKIJS_URL, WIKIJS_TOKEN, log_debug)
 
 @app.route('/export', methods=['GET', 'POST'])
-def export():
+def export_route():
     if request.method == 'POST':
         selected_pages = request.form.getlist('pages')
         selected_formats = request.form.getlist('formats')
@@ -785,10 +393,22 @@ def export():
 
         session_id = str(uuid.uuid4())
 
-        converted_files, failed_files, debug_data = export_pages_to_formats(
+        # Reset debug logs for this session
+        global debug_logs
+        debug_logs = []
+
+        # Use the export module function
+        converted_files, failed_files, debug_data = export.export_pages_to_formats(
             selected_pages,
             selected_formats,
-            session_id
+            session_id,
+            RESULT_FOLDER,
+            WIKIJS_URL,
+            WIKIJS_TOKEN,
+            OUTPUT_FORMAT_MAPPING,
+            sanitize_filename,
+            wikijs.fetch_page_content,
+            log_debug
         )
 
         return render_template_string(
@@ -801,7 +421,7 @@ def export():
         )
 
     # GET request: Show the export interface
-    pages, error = fetch_wikijs_pages(limit=200)
+    pages, error = wikijs.fetch_pages(WIKIJS_URL, WIKIJS_TOKEN, limit=200, debug_logger=log_debug)
 
     return render_template_string(
         load_template('export.html'),
@@ -820,24 +440,12 @@ def download_exported_file(session_id, filename):
 @app.route('/download_exported_zip/<session_id>', methods=['GET'])
 def download_exported_zip(session_id):
     """Download all exported files as a ZIP archive"""
-    session_result_dir = os.path.join(RESULT_FOLDER, session_id)
+    memory_file = export.create_exported_zip(session_id, RESULT_FOLDER)
 
-    if not os.path.exists(session_result_dir):
+    if not memory_file:
         flash('Fehler: Sitzungsdaten nicht gefunden')
-        return redirect(url_for('export'))
+        return redirect(url_for('export_route'))
 
-    memory_file = io.BytesIO()
-
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for root, dirs, files in os.walk(session_result_dir):
-            for file in files:
-                if file.endswith(('.md', '.docx', '.odt', '.rtf', '.pdf', '.html', '.tex', '.epub', '.pptx')):
-                    zipf.write(
-                        os.path.join(root, file),
-                        os.path.basename(file)
-                    )
-
-    memory_file.seek(0)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     return send_file(
@@ -845,253 +453,6 @@ def download_exported_zip(session_id):
         download_name=f'exported_wiki_pages_{timestamp}.zip',
         as_attachment=True
     )
-
-def export_pages_to_formats(page_paths, formats, session_id):
-    """
-    Export Wiki.js pages to various document formats using Pandoc
-
-    Args:
-        page_paths: List of Wiki.js page paths to export
-        formats: List of output formats
-        session_id: Session ID for storing results
-
-    Returns:
-        tuple: (converted_files, failed_files, debug_data)
-    """
-    log_debug(f"Starting export of {len(page_paths)} pages to formats: {', '.join(formats)}")
-
-    # Create session directories
-    export_dir = os.path.join(RESULT_FOLDER, session_id)
-    os.makedirs(export_dir, exist_ok=True)
-
-    converted_files = []
-    failed_files = []
-    debug_data = {}
-
-    for page_path in page_paths:
-        try:
-            # Get page content from Wiki.js
-            log_debug(f"Fetching content for page: {page_path}")
-            page_content, page_title = fetch_wikijs_page_content(page_path)
-
-            # Store debug data for this page
-            debug_data[page_path] = {
-                'title': page_title,
-                'content_length': len(page_content) if page_content else 0,
-                'has_content': bool(page_content)
-            }
-
-            if not page_content:
-                error_msg = "No content found"
-                log_debug(f"No content found for page: {page_path}", "error")
-                failed_files.append(f"{page_path} (no content)")
-                continue
-
-            # If no title was returned, use the last part of the path
-            if not page_title:
-                page_title = os.path.basename(page_path)
-
-            if not page_title:
-                page_title = "untitled"
-
-            # Sanitize the title for filename use
-            safe_title = sanitize_filename(page_title)
-            log_debug(f"Using title: {page_title} (sanitized as: {safe_title})")
-
-            # Create temporary markdown file
-            md_filename = f"{safe_title}.md"
-            md_filepath = os.path.join(export_dir, md_filename)
-
-            with open(md_filepath, 'w', encoding='utf-8') as f:
-                f.write(page_content)
-
-            # Convert to requested formats
-            for output_format in formats:
-                output_filename = f"{safe_title}.{output_format}"
-                output_filepath = os.path.join(export_dir, output_filename)
-
-                log_debug(f"Converting {page_path} to {output_format}")
-
-                # Prepare command
-                if output_format == "pdf":
-                    cmd = [
-                        'pandoc',
-                        '-f', 'markdown',
-                        '-t', 'pdf',
-                        '-o', output_filepath,
-                        md_filepath
-                    ]
-                else:
-                    cmd = [
-                        'pandoc',
-                        '-f', 'markdown',
-                        '-t', OUTPUT_FORMAT_MAPPING[output_format],
-                        '-o', output_filepath,
-                        md_filepath
-                    ]
-
-                # Execute conversion
-                try:
-                    result = subprocess.run(
-                        cmd,
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                    converted_files.append(output_filename)
-                    log_debug(f"Successfully converted {page_title} to {output_format}", "success")
-                except subprocess.CalledProcessError as e:
-                    log_debug(f"Pandoc error converting {page_title} to {output_format}: {e.stderr}", "error")
-                    failed_files.append(f"{page_title} ({output_format})")
-                except Exception as e:
-                    log_debug(f"Error converting {page_title} to {output_format}: {str(e)}", "error")
-                    failed_files.append(f"{page_title} ({output_format})")
-
-        except Exception as e:
-            log_debug(f"Unexpected error processing {page_path}: {str(e)}", "error")
-            failed_files.append(page_path)
-
-    return converted_files, failed_files, debug_data
-
-def fetch_wikijs_page_content(page_path):
-    """Fetch page content from Wiki.js API"""
-    log_debug(f"Fetching Wiki.js page content for path: {page_path}", "api")
-
-    if not WIKIJS_URL or not WIKIJS_TOKEN:
-        log_debug("Wiki.js URL or token not configured", "error")
-        return None, None
-
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {WIKIJS_TOKEN}'
-    }
-
-    # Step 1: First query to list all pages and find the matching one
-    find_page_query = """
-    query ListPages {
-      pages {
-        list {
-          id
-          path
-          title
-        }
-      }
-    }
-    """
-
-    try:
-        log_debug(f"Step 1: Listing pages to find ID for path: {page_path}", "api")
-        response = requests.post(
-            f"{WIKIJS_URL}/graphql",
-            json={'query': find_page_query},
-            headers=headers
-        )
-
-        response_data = response.json()
-
-        if 'errors' in response_data:
-            error_messages = ', '.join([error.get('message', 'Unknown error') for error in response_data['errors']])
-            log_debug(f"GraphQL errors listing pages: {error_messages}", "error")
-            return None, None
-
-        # Extract pages from the response
-        pages = response_data.get('data', {}).get('pages', {}).get('list', [])
-        if not pages:
-            log_debug(f"No pages found", "error")
-            return None, None
-
-        log_debug(f"Retrieved {len(pages)} pages, looking for path: {page_path}", "api")
-
-        # Find the page with matching path
-        matching_page = None
-        for p in pages:
-            if p.get('path') == page_path:
-                matching_page = p
-                break
-
-        # If no exact match found
-        if not matching_page:
-            log_debug(f"No page found with path: {page_path}", "error")
-            return None, None
-
-        page_id = matching_page.get('id')
-        title = matching_page.get('title')
-
-        if not page_id:
-            log_debug(f"Page found but has no ID for path: {page_path}", "error")
-            return None, title
-
-        log_debug(f"Found page ID: {page_id} for path: {page_path}", "success")
-
-        # Step 2: Now get the content using the page ID
-        content_query = """
-        query GetPageContent($id: Int!) {
-          pages {
-            single(id: $id) {
-              content
-              title
-              description
-              path
-              id
-            }
-          }
-        }
-        """
-
-        content_variables = {
-            'id': page_id
-        }
-
-        log_debug(f"Step 2: Fetching content for page ID: {page_id}", "api")
-        content_response = requests.post(
-            f"{WIKIJS_URL}/graphql",
-            json={'query': content_query, 'variables': content_variables},
-            headers=headers
-        )
-
-        content_data = content_response.json()
-
-        if 'errors' in content_data:
-            error_messages = ', '.join([error.get('message', 'Unknown error') for error in content_data['errors']])
-            log_debug(f"GraphQL errors fetching content: {error_messages}", "error")
-            return None, title
-
-        # Extract content from response
-        page_data = content_data.get('data', {}).get('pages', {}).get('single')
-        if not page_data:
-            log_debug(f"No content data found for page ID: {page_id}", "error")
-            return None, title
-
-        content = page_data.get('content')
-        # Update title if available in content response
-        if page_data.get('title'):
-            title = page_data.get('title')
-
-        if not content:
-            log_debug(f"Page found but content is empty. Page data: {page_data}", "warning")
-            return None, title
-
-        log_debug(f"Successfully fetched content for page: {title} ({len(content)} chars)", "success")
-        return content, title
-
-    except ValueError as json_err:
-        log_debug(f"Failed to parse Wiki.js API response as JSON: {str(json_err)}", "error")
-        log_debug(f"Raw response: {response.text[:200] if 'response' in locals() else 'No response available'}...", "error")
-        return None, None
-
-    except requests.exceptions.ConnectionError:
-        log_debug(f"Connection error: Could not connect to Wiki.js at {WIKIJS_URL}", "error")
-        return None, None
-
-    except requests.exceptions.HTTPError as http_err:
-        log_debug(f"HTTP error from Wiki.js API: {http_err}", "error")
-        return None, None
-
-    except Exception as e:
-        log_debug(f"Unexpected error while fetching page content: {str(e)}", "error")
-        import traceback
-        log_debug(f"Traceback: {traceback.format_exc()}", "error")
-        return None, None
 
 if __name__ == '__main__':
     # Stelle sicher, dass das Templates-Verzeichnis existiert
