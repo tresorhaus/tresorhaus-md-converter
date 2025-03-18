@@ -615,11 +615,11 @@
         }
     </style>
 </head>
-<body>
+<body class="dark-theme">
     <!-- Theme Switch -->
     <div class="theme-switch-wrapper">
         <label class="theme-switch" for="checkbox">
-            <input type="checkbox" id="checkbox" />
+            <input type="checkbox" id="checkbox" checked />
             <div class="slider"></div>
         </label>
     </div>
@@ -711,17 +711,29 @@
             // Theme switching
             const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
 
-            // Check for saved theme preference
+            // Apply dark theme by default
+            document.body.classList.add('dark-theme');
+            localStorage.setItem('theme', 'dark');
+
+            // Check for saved theme preference, but prioritize dark theme
             const currentTheme = localStorage.getItem('theme');
 
+            // But still allow the user to override if they've explicitly set a preference
             if (currentTheme) {
-                // If dark theme was saved, check the toggle and apply dark theme
                 if (currentTheme === 'dark') {
                     toggleSwitch.checked = true;
                     document.body.classList.add('dark-theme');
+                } else {
+                    toggleSwitch.checked = false;
+                    document.body.classList.remove('dark-theme');
                 }
+            } else {
+                // No saved preference, use dark theme by default
+                toggleSwitch.checked = true;
+                localStorage.setItem('theme', 'dark');
             }
 
+            // Rest of theme switching logic
             function switchTheme(e) {
                 if (e.target.checked) {
                     document.body.classList.add('dark-theme');
