@@ -73,6 +73,7 @@ systemctl stop $SERVICE_NAME
 # Aktualisiere Anwendungsdateien
 log "Aktualisiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
+cp utils.py $INSTALL_DIR/  # Kopieren der utils.py Datei
 cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || warning "Keine statischen Dateien gefunden."
 
 # Aktualisiere Template-Dateien
@@ -87,35 +88,43 @@ if [ -d "templates" ]; then
 
     # Stelle sicher, dass das Zielverzeichnis existiert
     mkdir -p $TEMPLATES_DIR
+
+    # Kopiere alle Template-Dateien
     cp -r templates/* $TEMPLATES_DIR/
-    log "Templates aktualisiert."
 else
-    warning "Keine Template-Dateien im Quellverzeichnis gefunden."
+    warning "Keine Template-Dateien gefunden."
 fi
 
-# Aktualisiere Wiki.js Konfiguration wenn gewünscht
-if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
-    if [ -f "$INSTALL_DIR/.env" ]; then
-        source "$INSTALL_DIR/.env"
-    fi
+# Update requirements.txt und installiere neue Abhängigkeiten
+if [ -f "requirements.txt" ]; then
+    log "Aktualisiere Python-Abhängigkeiten..."
+    $VENV_DIR/bin/pip install --upgrade -r requirements.txt
+fi
 
+# Update .env wenn Wiki.js Konfiguration aktualisiert werden soll
+if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
+    log "Aktualisiere Wiki.js Konfiguration..."
+
+    # Lade aktuelle .env Datei
+    source $INSTALL_DIR/.env
+
+    # Aktualisiere nur die angegebenen Werte
     if [ ! -z "$NEW_WIKIJS_URL" ]; then
-        WIKIJS_URL=$NEW_WIKIJS_URL
+        WIKIJS_URL="$NEW_WIKIJS_URL"
+        log "Wiki.js URL aktualisiert zu: $WIKIJS_URL"
     fi
 
     if [ ! -z "$NEW_WIKIJS_TOKEN" ]; then
-        WIKIJS_TOKEN=$NEW_WIKIJS_TOKEN
+        WIKIJS_TOKEN="$NEW_WIKIJS_TOKEN"
+        log "Wiki.js API Token aktualisiert"
     fi
 
     if [ ! -z "$NEW_WIKIJS_EXTERNAL_URL" ]; then
-        WIKIJS_EXTERNAL_URL=$NEW_WIKIJS_EXTERNAL_URL
-    elif [ -z "$WIKIJS_EXTERNAL_URL" ]; then
-        # Wenn keine externe URL gesetzt ist und keine neue angegeben wurde, verwende die URL
-        WIKIJS_EXTERNAL_URL=$WIKIJS_URL
-        warning "Keine Wiki.js External URL gefunden. Verwende Wiki.js URL als External URL."
+        WIKIJS_EXTERNAL_URL="$NEW_WIKIJS_EXTERNAL_URL"
+        log "Wiki.js External URL aktualisiert zu: $WIKIJS_EXTERNAL_URL"
     fi
 
-    log "Schreibe aktualisierte .env Datei..."
+    # Schreibe aktualisierte .env Datei
     cat > $INSTALL_DIR/.env << EOF
 WIKIJS_URL=$WIKIJS_URL
 WIKIJS_TOKEN=$WIKIJS_TOKEN
@@ -123,17 +132,9 @@ WIKIJS_EXTERNAL_URL=$WIKIJS_EXTERNAL_URL
 EOF
 fi
 
-# Aktualisiere Python-Abhängigkeiten
-log "Aktualisiere Python-Abhängigkeiten..."
-if [ -f "requirements.txt" ]; then
-    $VENV_DIR/bin/pip install --upgrade -r requirements.txt
-else
-    warning "requirements.txt nicht gefunden. Überspringe Abhängigkeiten-Update."
-fi
-
-# Berechtigungen aktualisieren
-log "Aktualisiere Berechtigungen..."
-chown -R docflow:docflow $INSTALL_DIR
+# Setze Berechtigungen
+log "Setze Berechtigungen..."
+chown -R $SERVICE_USER:$SERVICE_USER $INSTALL_DIR
 chmod -R 755 $INSTALL_DIR
 chmod 600 $INSTALL_DIR/.env
 
@@ -159,13 +160,11 @@ echo -e "Backup-Verzeichnis: $BACKUP_DIR"
 echo -e "Web-Interface: http://localhost:5000"
 
 if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
-    echo -e "Wiki.js URL wurde aktualisiert: $WIKIJS_URL"
+    echo -e "Wiki.js URL: $WIKIJS_URL"
     echo -e "Wiki.js External URL: $WIKIJS_EXTERNAL_URL"
-    if [ ! -z "$NEW_WIKIJS_TOKEN" ]; then
-        echo -e "Wiki.js API Token wurde aktualisiert."
-    fi
 fi
 
-echo -e "\nNeue Funktionen:"
-echo -e "  - Dokument zu Wiki.js: Konvertierung von Dokumenten zu Markdown mit Upload zu Wiki.js"
-echo -e "  - Wiki.js zu Dokument: Export von Wiki.js-Seiten in verschiedene Dokumentformate"
+echo -e "\nBefehle für die Verwaltung:"
+echo -e "  Status anzeigen:    sudo systemctl status $SERVICE_NAME"
+echo -e "  Service neustarten: sudo systemctl restart $SERVICE_NAME"
+echo -e "  Logs anzeigen:      sudo journalctl -u $SERVICE_NAME -f"

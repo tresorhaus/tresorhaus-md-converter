@@ -87,6 +87,7 @@ mkdir -p $TEMPLATES_DIR
 # Kopiere Anwendungsdateien
 log "Kopiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
+cp utils.py $INSTALL_DIR/  # Kopieren der neuen utils.py Datei
 cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || warning "Keine statischen Dateien gefunden."
 
 # Kopiere Template-Dateien, falls vorhanden
