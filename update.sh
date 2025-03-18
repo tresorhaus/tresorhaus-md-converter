@@ -91,8 +91,38 @@ else
     warning "Modul export.py nicht gefunden! Existierende Datei wird nicht überschrieben."
 fi
 
-# Kopiere statische Dateien
-cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || warning "Keine statischen Dateien gefunden."
+# Stelle sicher, dass das static-Verzeichnis existiert
+mkdir -p $INSTALL_DIR/static
+
+# Prüfe und kopiere statische Dateien
+log "Aktualisiere statische Dateien..."
+if [ -d "static" ]; then
+    cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || log "Statische Dateien kopiert."
+
+    # Prüfe kritische statische Dateien
+    if [ -f "static/favicon.ico" ]; then
+        log "Favicon-Datei gefunden und kopiert."
+    else
+        warning "Favicon-Datei fehlt in der Quelle. Erstelle Platzhalter..."
+        # Erstelle einfaches Favicon mit Base64-Encoding
+        echo "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4MezDuLKtz/hx7N54MayoeDFsNHgxa/s4cWv+OHFr/zgxa/t4MWv0uDGsabhx7N53M2/QdbKvQ8AAAAAAAAAAAAAAAAAAAAAxZZrxsWVaP/Unmz/4MCp/+/XwP/z4c//8+LT//Pi0//z4c//79fC/+HBqv/VoG7/xZVo/8WWa8kAAAAAAAAAAAAAAAAAAAAAxpZp/+jMtf/58On/+vHq//nx6f/58en/+fHp//nx6f/58en/+fHp//nx6f/pzbb/xpZp/wAAAAAAAAAAAAAAAAAAAADGmGz/6tC6//v07//79O//+/Tv//v07//79O//+/Tv//v07//79O//+/Tv/+rRu//GmGz/AAAAAAAAAAAAAAAAAAAAAMaab//s1MH//Pbz//z28//89vP//Pbz//z28//89vP//Pbz//z28//89vP/7NXC/8aab/8AAAAAAAAAAAAAAAAAAAAAxpxz/+7YyP/9+fb//fn2//359v/9+fb//359v/9+fb//fn2//359v/u2Mn/xpxz/wAAAAAAAAAAAAAAAAAAAADHn3j/8NzP//78+v/+/Pr//vz6//78+v/+/Pr//vz6//78+v/+/Pr//vz6//Ddz//Hn3j/AAAAAAAAAAAAAAAAAAAAAMiie//y4NX////////////////////////////////////////////////////////////y4db/yKJ7/wAAAAAAAAAAAAAAAAAAAADJpYD/8+Tc/////////////////////////////////////////////////////////////PPl3P/JpYD/AAAAAAAAAAAAAAAAAAAAAMmohf/06OH////////////////////////////////////////////////////////////06OL/yaiF/wAAAAAAAAAAAAAAAAAAAADKrIv/9evn////////////////////////////////////////////////////////////9evn/8qsi/8AAAAAAAAAAAAAAAAAAAAAy6+P//ft6////////////////////////////////////////////////////////////f/37ej/y6+P/wAAAAAAAAAAAAAAAAAAAADLspT/+O/t///////////////////////////////////////////////////////++f/47+3/y7KU/wAAAAAAAAAAAAAAAAAAAADLtZj/+vLx//////////////////////////////////////////////////////////////////ry8f/LtZj/AAAAAAAAAAAAAAAAAAAAAMq1nLTe0cL/8OXf//Hl3//x5d//8eXf//Hl3//x5d//8eXf//Hl3//x5d//8eXf/97Rwv/KtZy1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA" | base64 -d > $INSTALL_DIR/static/favicon.ico
+        log "Platzhalter-Favicon erstellt: $INSTALL_DIR/static/favicon.ico"
+    fi
+
+    if [ -f "static/logo-tresorhaus.svg" ]; then
+        log "Logo-Datei gefunden und kopiert."
+    fi
+else
+    warning "Kein static-Verzeichnis gefunden. Erstelle es..."
+    mkdir -p $INSTALL_DIR/static
+
+    # Erstelle Platzhalter-Favicon falls nicht vorhanden
+    if [ ! -f "$INSTALL_DIR/static/favicon.ico" ]; then
+        warning "Erstelle Platzhalter-Favicon..."
+        echo "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4MezDuLKtz/hx7N54MayoeDFsNHgxa/s4cWv+OHFr/zgxa/t4MWv0uDGsabhx7N53M2/QdbKvQ8AAAAAAAAAAAAAAAAAAAAAxZZrxsWVaP/Unmz/4MCp/+/XwP/z4c//8+LT//Pi0//z4c//79fC/+HBqv/VoG7/xZVo/8WWa8kAAAAAAAAAAAAAAAAAAAAAxpZp/+jMtf/58On/+vHq//nx6f/58en/+fHp//nx6f/58en/+fHp//nx6f/pzbb/xpZp/wAAAAAAAAAAAAAAAAAAAADGmGz/6tC6//v07//79O//+/Tv//v07//79O//+/Tv//v07//79O//+/Tv/+rRu//GmGz/AAAAAAAAAAAAAAAAAAAAAMaab//s1MH//Pbz//z28//89vP//Pbz//z28//89vP//Pbz//z28//89vP/7NXC/8aab/8AAAAAAAAAAAAAAAAAAAAAxpxz/+7YyP/9+fb//fn2//359v/9+fb//359v/9+fb//fn2//359v/u2Mn/xpxz/wAAAAAAAAAAAAAAAAAAAADHn3j/8NzP//78+v/+/Pr//vz6//78+v/+/Pr//vz6//78+v/+/Pr//vz6//Ddz//Hn3j/AAAAAAAAAAAAAAAAAAAAAMiie//y4NX////////////////////////////////////////////////////////////y4db/yKJ7/wAAAAAAAAAAAAAAAAAAAADJpYD/8+Tc/////////////////////////////////////////////////////////////PPl3P/JpYD/AAAAAAAAAAAAAAAAAAAAAMmohf/06OH////////////////////////////////////////////////////////////06OL/yaiF/wAAAAAAAAAAAAAAAAAAAADKrIv/9evn////////////////////////////////////////////////////////////9evn/8qsi/8AAAAAAAAAAAAAAAAAAAAAy6+P//ft6////////////////////////////////////////////////////////////f/37ej/y6+P/wAAAAAAAAAAAAAAAAAAAADLspT/+O/t///////////////////////////////////////////////////////++f/47+3/y7KU/wAAAAAAAAAAAAAAAAAAAADLtZj/+vLx//////////////////////////////////////////////////////////////////ry8f/LtZj/AAAAAAAAAAAAAAAAAAAAAMq1nLTe0cL/8OXf//Hl3//x5d//8eXf//Hl3//x5d//8eXf//Hl3//x5d//8eXf/97Rwv/KtZy1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA" | base64 -d > $INSTALL_DIR/static/favicon.ico
+        log "Platzhalter-Favicon erstellt: $INSTALL_DIR/static/favicon.ico"
+    fi
+fi
 
 # Aktualisiere Template-Dateien
 log "Aktualisiere Template-Dateien..."
