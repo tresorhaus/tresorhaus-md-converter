@@ -1,10 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
- DocFlow
-Ein Dokumentenkonverter für verschiedene Dateiformate zu Markdown mit Wiki.js Integration
+DocFlow - Markdown Converter for Wiki.js
+Created by: Joachim Mild
+Copyright (c) 2025 TresorHaus GmbH
 
-Author: Joachim Mild
-Created: 2025
-Company: TresorHaus GmbH
+Ein Dokumentenkonverter für verschiedene Dateiformate zu Markdown mit Wiki.js Integration
 """
 
 import os

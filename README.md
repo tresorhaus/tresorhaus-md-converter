@@ -4,13 +4,14 @@
   <img src="static/logo-tresorhaus.svg" alt="TresorHaus Logo" width="300"/>
 </p>
 
- DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentformate automatisch in Markdown umwandelt. Die Anwendung wurde speziell entwickelt, um die Dokumentenverwaltung zu optimieren und den Workflow zwischen verschiedenen Systemen zu vereinfachen.
+DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentformate automatisch in Markdown umwandelt. Die Anwendung wurde speziell entwickelt, um die Dokumentenverwaltung zu optimieren und den Workflow zwischen verschiedenen Systemen zu vereinfachen.
 
 ## Autor
 Entwickelt von Joachim Mild für TresorHaus GmbH
 
 ## 🚀 Funktionen
 
+### Dokumentkonvertierung
 - **Umfangreiche Formatunterstützung:**
   - Microsoft Office (DOC, DOCX, PPT, PPTX)
   - OpenOffice/LibreOffice (ODT, ODP)
@@ -23,17 +24,32 @@ Entwickelt von Joachim Mild für TresorHaus GmbH
   - Mehrfachauswahl von Dateien
   - Übersichtliche Ergebnisanzeige
   - Benutzerspezifische Einstellungen
+  - Dark Mode für angenehmes Arbeiten
 
 - **Flexible Ausgabeoptionen:**
   - Einzelne Markdown-Dateien herunterladen
   - Alle konvertierten Dateien als ZIP-Archiv
   - Beibehaltung der ursprünglichen Dateinamen
 
-- **Wiki.js Integration:**
-  - Direktes Hochladen in Wiki.js
-  - Verzeichnisstruktur-Browser
+### Wiki.js Integration
+- **Dokument zu Wiki.js:**
+  - Direktes Hochladen konvertierter Dokumente in Wiki.js
+  - Verzeichnisstruktur-Browser für einfache Navigation
   - Anpassbare Pfade für jedes Dokument
+  - Benutzerdefinierte Titel für Wiki.js-Seiten
+  - Automatische Bereinigung von Konvertierungsartefakten
+
+- **Wiki.js zu Dokument:**
+  - Export von Wiki.js-Seiten in verschiedene Dokumentformate
+  - Unterstützte Formate: DOCX, ODT, RTF, PDF, HTML, TEX, EPUB, PPTX
+  - Filterfunktion für Wiki.js-Seiten
+  - Mehrere Seiten gleichzeitig exportieren
+  - ZIP-Download aller exportierten Dateien
+
+- **Zusätzliche Features:**
   - Verbindungstest zur Wiki.js API
+  - Detaillierte Debug-Informationen
+  - Automatische Sanitierung von Pfaden und Titeln für Wiki.js
 
 ## 🛠 Installation
 
@@ -42,6 +58,8 @@ Entwickelt von Joachim Mild für TresorHaus GmbH
 - Debian 12 oder Ubuntu 22.04+
 - Sudo-Rechte
 - Internetverbindung
+- Pandoc (wird automatisch installiert)
+- Python 3.8+ (wird automatisch installiert, falls nicht vorhanden)
 
 ### Automatische Installation
 
@@ -56,6 +74,11 @@ Entwickelt von Joachim Mild für TresorHaus GmbH
    chmod +x install.sh
    sudo ./install.sh
    ```
+
+   Während der Installation werden Sie nach folgenden Informationen gefragt:
+   - Wiki.js URL (z.B. http://wiki.example.com)
+   - Wiki.js API Token
+   - Wiki.js External URL (für Links, meist identisch mit Wiki.js URL)
 
 ### Manuelle Installation
 
@@ -75,6 +98,13 @@ Entwickelt von Joachim Mild für TresorHaus GmbH
    sudo apt-get install pandoc
    ```
 
+4. **Konfigurationsdatei erstellen (.env):**
+   ```
+   WIKIJS_URL=https://ihr-wiki.js-url
+   WIKIJS_TOKEN=ihr-api-token
+   WIKIJS_EXTERNAL_URL=https://ihre-externe-wiki-url
+   ```
+
 ## 🔄 Aktualisierung
 
 So aktualisieren Sie die Anwendung:
@@ -83,6 +113,8 @@ So aktualisieren Sie die Anwendung:
 sudo ./update.sh
 ```
 
+Das Update-Skript erstellt automatisch ein Backup und bietet die Möglichkeit, die Wiki.js-Konfiguration zu aktualisieren.
+
 ## 🗑 Deinstallation
 
 So entfernen Sie die Anwendung:
@@ -90,6 +122,8 @@ So entfernen Sie die Anwendung:
 ```bash
 sudo ./uninstall.sh
 ```
+
+Das Deinstallationsskript bietet die Option, ein finales Backup zu erstellen, bevor alle Komponenten entfernt werden.
 
 ## 🚦 Verwendung
 
@@ -113,15 +147,43 @@ sudo journalctl -u tresorhaus-docflow -f
 python app.py
 ```
 
+### Dokumentkonvertierung (Dokument zu Wiki.js)
+
+1. Navigieren Sie zu `http://localhost:5000`
+2. Richten Sie optional Ihre Benutzereinstellungen ein
+3. Wählen Sie eine oder mehrere Dateien aus
+4. Aktivieren Sie "Direkt in Wiki.js hochladen", wenn gewünscht
+5. Konfigurieren Sie Wiki.js-Pfade und Titel nach Bedarf
+6. Klicken Sie auf "Konvertieren"
+7. Auf der Ergebnisseite können Sie:
+   - Alle Dateien als ZIP herunterladen
+   - Einzelne Dateien herunterladen
+   - Links zu hochgeladenen Wiki.js-Seiten öffnen
+   - Debug-Informationen einsehen
+
+### Wiki.js Export (Wiki.js zu Dokument)
+
+1. Navigieren Sie zu `http://localhost:5000/export`
+2. Wählen Sie die gewünschten Ausgabeformate
+3. Wählen Sie die zu exportierenden Wiki.js-Seiten
+4. Klicken Sie auf "Exportieren"
+5. Auf der Ergebnisseite können Sie:
+   - Alle exportierten Dateien als ZIP herunterladen
+   - Einzelne Dateien herunterladen
+   - Debug-Informationen einsehen
+
 ## 🔧 Konfiguration
 
 Die Anwendung kann über verschiedene Umgebungsvariablen konfiguriert werden:
 
+- `WIKIJS_URL`: URL zur Wiki.js API (erforderlich für Wiki.js-Integration)
+- `WIKIJS_TOKEN`: API-Schlüssel für Wiki.js (erforderlich für Wiki.js-Integration)
+- `WIKIJS_EXTERNAL_URL`: Externe URL für Wiki.js (für korrekte Links, optional)
 - `PORT`: Server-Port (Standard: 5000)
 - `HOST`: Host-Adresse (Standard: 0.0.0.0)
 - `DEBUG`: Debug-Modus (Standard: True)
-- `WIKI_API_URL`: URL zur Wiki.js API
-- `WIKI_API_KEY`: API-Schlüssel für Wiki.js
+
+Diese Konfigurationen können in der `.env`-Datei im Installationsverzeichnis angepasst werden.
 
 ## 📁 Projektstruktur
 ```

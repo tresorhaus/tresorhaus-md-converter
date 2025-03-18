@@ -1,4 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
+DocFlow - Markdown Converter for Wiki.js
+Created by: Joachim Mild
+Copyright (c) 2025 TresorHaus GmbH
+
 Wiki.js API interaction functionality for DocFlow application
 """
 

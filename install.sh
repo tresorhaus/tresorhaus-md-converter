@@ -1,7 +1,8 @@
 #!/bin/bash
 
-#  DocFlow Installer
-# Author: Joachim Mild
+# DocFlow Installer
+# Created by: Joachim Mild
+# Copyright (c) 2025 TresorHaus GmbH
 # For Debian 12
 
 # Farben für Ausgaben
