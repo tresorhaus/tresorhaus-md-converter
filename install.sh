@@ -69,7 +69,7 @@ WantedBy=multi-user.target"
 # Benötigte Pakete installieren
 log "Installiere benötigte System-Pakete..."
 apt-get update
-apt-get install -y python3-venv python3-pip pandoc
+apt-get install -y python3-venv python3-pip pandoc texlive-latex-base texlive-fonts-recommended texlive-latex-extra
 
 # Benutzer erstellen
 log "Erstelle Service-Benutzer..."
