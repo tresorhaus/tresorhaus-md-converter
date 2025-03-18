@@ -13,6 +13,8 @@ import subprocess
 import zipfile
 import io
 from datetime import datetime
+from media import MediaHandler
+import shutil
 
 def log_debug(message, log_type='info'):
     """Placeholder for log_debug function - will be replaced with app's function"""
@@ -52,6 +54,8 @@ def export_pages_to_formats(page_paths, formats, session_id, result_folder, wiki
     failed_files = []
     debug_data = {}
 
+    media_handler = MediaHandler(wikijs_url, wikijs_token)
+
     for page_path in page_paths:
         try:
             # Get page content from Wiki.js
@@ -89,6 +93,9 @@ def export_pages_to_formats(page_paths, formats, session_id, result_folder, wiki
             with open(md_filepath, 'w', encoding='utf-8') as f:
                 f.write(page_content)
 
+            # Download media and adjust paths
+            content_with_media, media_dir = media_handler.download_media(page_content, page_path)
+
             # Convert to requested formats
             for output_format in formats:
                 output_filename = f"{safe_title}.{output_format}"
@@ -97,27 +104,26 @@ def export_pages_to_formats(page_paths, formats, session_id, result_folder, wiki
                 log_debug(f"Converting {page_path} to {output_format}")
 
                 # Prepare command
-                if output_format == "pdf":
-                    cmd = [
-                        'pandoc',
-                        '-f', 'markdown',
-                        '-t', 'pdf',
-                        '-o', output_filepath,
-                        md_filepath
-                    ]
-                else:
-                    cmd = [
-                        'pandoc',
-                        '-f', 'markdown',
-                        '-t', output_format_mapping[output_format],
-                        '-o', output_filepath,
-                        md_filepath
-                    ]
+                cmd = [
+                    'pandoc',
+                    '-f', 'markdown',
+                    '-t', output_format_mapping[output_format],
+                    '--extract-media=.',  # Extract media
+                    '--wrap=none',
+                    '--standalone',
+                    '-o', output_filepath
+                ]
+
+                # Create temporary markdown file with adjusted media paths
+                temp_md = os.path.join(media_dir, 'temp.md')
+                with open(temp_md, 'w') as f:
+                    f.write(content_with_media)
 
                 # Execute conversion
                 try:
                     result = subprocess.run(
                         cmd,
+                        input=content_with_media.encode(),
                         capture_output=True,
                         text=True,
                         check=True
@@ -130,6 +136,9 @@ def export_pages_to_formats(page_paths, formats, session_id, result_folder, wiki
                 except Exception as e:
                     log_debug(f"Error converting {page_title} to {output_format}: {str(e)}", "error")
                     failed_files.append(f"{page_title} ({output_format})")
+
+                # Clean up
+                shutil.rmtree(media_dir, ignore_errors=True)
 
         except Exception as e:
             log_debug(f"Unexpected error processing {page_path}: {str(e)}", "error")
