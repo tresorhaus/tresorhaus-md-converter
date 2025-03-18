@@ -8,9 +8,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocFlow - Export Ergebnisse</title>
+    <title>Export Ergebnisse - DocFlow</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -449,115 +449,82 @@
         </label>
     </div>
 
-    <div class="container">
+    <header>
         <div class="logo">
             <img src="{{ url_for('static', filename='logo-tresorhaus.svg') }}" alt="TresorHaus Logo">
+            <h1>DocFlow - Export Ergebnisse</h1>
         </div>
+        <nav>
+            <a href="{{ url_for('index') }}">Konvertieren</a>
+            <a href="{{ url_for('export_route') }}" class="active">Exportieren</a>
+        </nav>
+    </header>
 
-        <!-- Navigation Tabs -->
-        <div class="nav-tabs">
-            <div class="nav-tab" onclick="location.href='{{ url_for('index') }}';">Dokument zu Wiki.js</div>
-            <div class="nav-tab" onclick="location.href='{{ url_for('export') }}'">Wiki.js zu Dokument</div>
-            <div class="nav-tab active">Ergebnisse</div>
-        </div>
+    <main>
+        <section class="info-box">
+            <h2>Export abgeschlossen</h2>
+            <p>Die ausgewählten Wiki.js-Seiten wurden in die gewünschten Formate exportiert.</p>
+        </section>
 
-        <h1>DocFlow - Wiki.js Export Ergebnisse</h1>
-        <p>Ergebnisse Ihres Wiki.js-Exports</p>
-
-        <div class="summary-box">
-            <h3>Zusammenfassung</h3>
-            <p>{{ converted_files|length }} Datei(en) erfolgreich konvertiert, {{ failed_files|length }} Fehler.</p>
-            <p>
-                <a href="{{ url_for('download_exported_zip', session_id=session_id) }}" class="btn">Alle Dateien als ZIP herunterladen</a>
-                <a href="{{ url_for('export') }}" class="btn btn-secondary">Zurück zum Export</a>
-            </p>
-        </div>
-
-        {% if converted_files %}
-        <h3>Erfolgreich konvertierte Dateien</h3>
-        <ul class="result-list">
-            {% for filename in converted_files %}
-            <li>
-                <div class="filename">
-                    {{ filename }} <span class="success-badge">✓</span>
-                </div>
-                <div class="actions">
-                    <a href="{{ url_for('download_exported_file', session_id=session_id, filename=filename) }}" class="btn btn-secondary">Herunterladen</a>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-
-        {% if failed_files %}
-        <h3>Fehlerhafte Konvertierungen</h3>
-        <ul class="result-list">
-            {% for filename in failed_files %}
-            <li>
-                <div class="filename">{{ filename }} <span class="error-badge">✗</span></div>
-            </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-
-        <button id="debug-toggle" class="blue-toggle-btn">Debug-Informationen anzeigen</button>
-
-        <div id="debug-section" class="debug-section">
-            <h3>Debug-Informationen</h3>
-
-            <div class="debug-tabs">
-                <div class="nav-tab active" data-tab="log-tab">Log-Einträge</div>
-                <div class="nav-tab" data-tab="api-tab">API-Details</div>
-            </div>
-
-            <div id="log-tab" class="tab-content active">
-                <pre>
-{% for log in debug_logs %}
-[{{ log.timestamp }}] [{{ log.level }}] {{ log.message }}
-{% endfor %}
-                </pre>
-            </div>
-
-            <div id="api-tab" class="tab-content">
-                <h4>Wiki.js API Antworten</h4>
-
-                <div class="debug-pages-container">
-                {% for page_path, data in debug_data.items() %}
-                    <div class="debug-page-item {% if not data.has_content %}error-highlight{% endif %}">
-                        <ul>
-                            <li>Titel: {{ data.title if data.title else 'Nicht gefunden' }}</li>
-                            <li>Inhaltslänge: {{ data.content_length }} Zeichen</li>
-                            <li>Status:
-                                <span class="{% if data.has_content %}success-text{% else %}error-text{% endif %}">
-                                    {{ 'Inhalt gefunden' if data.has_content else 'Kein Inhalt' }}
-                                </span>
+        <div class="results-container">
+            <h3>Ergebnisse:</h3>
+            {% if converted_files %}
+                <section class="success-section">
+                    <h4>Erfolgreich exportierte Dateien ({{ converted_files|length }}):</h4>
+                    <ul class="file-list">
+                        {% for file in converted_files %}
+                            <li>
+                                {{ file }}
+                                <a href="{{ url_for('download_exported_file', session_id=session_id, filename=file) }}" class="download-link">
+                                    Herunterladen
+                                </a>
                             </li>
-                        </ul>
-                    </div>
-                {% endfor %}
-                </div>
-
-                <div class="debug-tips">
-                    <h4>Tipps bei fehlendem Inhalt:</h4>
-                    <ul>
-                        <li>Überprüfen Sie die notwendigen Berechtigungen</li>
-                        <li>Die Seite existiert nicht unter dem angegebenen Pfad</li>
-                        <li>Die Seite ist leer oder wurde gelöscht</li>
-                        <li>Verbindungsprobleme zum Wiki.js Server</li>
+                        {% endfor %}
                     </ul>
+                </section>
+            {% endif %}
+
+            {% if failed_files %}
+                <section class="error-section">
+                    <h4>Fehlgeschlagene Exporte ({{ failed_files|length }}):</h4>
+                    <ul class="file-list error-list">
+                        {% for file in failed_files %}
+                            <li>{{ file }}</li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+        </div>
+
+        <div class="button-group centered">
+            <a href="{{ url_for('download_exported_zip', session_id=session_id) }}" class="primary-button download-button">
+                Alle Dateien als ZIP herunterladen
+            </a>
+            <a href="{{ url_for('export_route') }}" class="secondary-button">
+                Zurück zum Export
+            </a>
+        </div>
+
+        {% if debug_logs %}
+            <section class="debug-section">
+                <h3>Debug-Log:</h3>
+                <div class="debug-log">
+                    {% for log in debug_logs %}
+                        <p class="log-entry {{ log.type }}">
+                            <span class="time">{{ log.time }}</span>
+                            <span class="type">{{ log.type.upper() }}</span>
+                            <span class="message">{{ log.message }}</span>
+                        </p>
+                    {% endfor %}
                 </div>
+            </section>
+        {% endif %}
+    </main>
 
-                {% if not debug_data %}
-                <p>Keine API Debug-Daten verfügbar.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Footer with creator information -->
-        <div class="footer">
-            <div>Entwickelt von Joachim Mild für TresorHaus GmbH</div>
-        </div>
-    </div>
+    <footer>
+        <p>© TresorHaus GmbH</p>
+        <p>DocFlow - Ein Dokument-Konverter</p>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
