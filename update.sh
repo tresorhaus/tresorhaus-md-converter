@@ -71,74 +71,27 @@ manage_backups
 log "Stoppe Service..."
 systemctl stop $SERVICE_NAME
 
-# Aktualisiere Anwendungsdateien
-log "Aktualisiere Anwendungsdateien..."
-cp app.py $INSTALL_DIR/
-cp utils.py $INSTALL_DIR/
+# Aktualisiere alle Python-Dateien auf einmal
+log "Aktualisiere alle Python-Dateien..."
+cp *.py $INSTALL_DIR/
 
-# Aktualisiere Moduldateien
-if [ -f "wikijs.py" ]; then
-    log "Aktualisiere Wiki.js-Modul..."
-    cp wikijs.py $INSTALL_DIR/
-else
-    warning "Modul wikijs.py nicht gefunden! Existierende Datei wird nicht überschrieben."
-fi
-
-if [ -f "export.py" ]; then
-    log "Aktualisiere Export-Modul..."
-    cp export.py $INSTALL_DIR/
-else
-    warning "Modul export.py nicht gefunden! Existierende Datei wird nicht überschrieben."
-fi
-
-# Stelle sicher, dass das static-Verzeichnis existiert
-mkdir -p $INSTALL_DIR/static
-
-# Prüfe und kopiere statische Dateien
+# Aktualisiere statische Dateien
 log "Aktualisiere statische Dateien..."
 if [ -d "static" ]; then
-    cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || log "Statische Dateien kopiert."
-
-    # Prüfe kritische statische Dateien
-    if [ -f "static/favicon.ico" ]; then
-        log "Favicon-Datei gefunden und kopiert."
-    else
-        warning "Favicon-Datei fehlt in der Quelle. Erstelle Platzhalter..."
-        # Erstelle einfaches Favicon mit Base64-Encoding
-        echo "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4MezDuLKtz/hx7N54MayoeDFsNHgxa/s4cWv+OHFr/zgxa/t4MWv0uDGsabhx7N53M2/QdbKvQ8AAAAAAAAAAAAAAAAAAAAAxZZrxsWVaP/Unmz/4MCp/+/XwP/z4c//8+LT//Pi0//z4c//79fC/+HBqv/VoG7/xZVo/8WWa8kAAAAAAAAAAAAAAAAAAAAAxpZp/+jMtf/58On/+vHq//nx6f/58en/+fHp//nx6f/58en/+fHp//nx6f/pzbb/xpZp/wAAAAAAAAAAAAAAAAAAAADGmGz/6tC6//v07//79O//+/Tv//v07//79O//+/Tv//v07//79O//+/Tv/+rRu//GmGz/AAAAAAAAAAAAAAAAAAAAAMaab//s1MH//Pbz//z28//89vP//Pbz//z28//89vP//Pbz//z28//89vP/7NXC/8aab/8AAAAAAAAAAAAAAAAAAAAAxpxz/+7YyP/9+fb//fn2//359v/9+fb//359v/9+fb//fn2//359v/u2Mn/xpxz/wAAAAAAAAAAAAAAAAAAAADHn3j/8NzP//78+v/+/Pr//vz6//78+v/+/Pr//vz6//78+v/+/Pr//vz6//Ddz//Hn3j/AAAAAAAAAAAAAAAAAAAAAMiie//y4NX////////////////////////////////////////////////////////////y4db/yKJ7/wAAAAAAAAAAAAAAAAAAAADJpYD/8+Tc/////////////////////////////////////////////////////////////PPl3P/JpYD/AAAAAAAAAAAAAAAAAAAAAMmohf/06OH////////////////////////////////////////////////////////////06OL/yaiF/wAAAAAAAAAAAAAAAAAAAADKrIv/9evn////////////////////////////////////////////////////////////9evn/8qsi/8AAAAAAAAAAAAAAAAAAAAAy6+P//ft6////////////////////////////////////////////////////////////f/37ej/y6+P/wAAAAAAAAAAAAAAAAAAAADLspT/+O/t///////////////////////////////////////////////////////++f/47+3/y7KU/wAAAAAAAAAAAAAAAAAAAADLtZj/+vLx//////////////////////////////////////////////////////////////////ry8f/LtZj/AAAAAAAAAAAAAAAAAAAAAMq1nLTe0cL/8OXf//Hl3//x5d//8eXf//Hl3//x5d//8eXf//Hl3//x5d//8eXf/97Rwv/KtZy1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA" | base64 -d > $INSTALL_DIR/static/favicon.ico
-        log "Platzhalter-Favicon erstellt: $INSTALL_DIR/static/favicon.ico"
-    fi
-
-    if [ -f "static/logo-tresorhaus.svg" ]; then
-        log "Logo-Datei gefunden und kopiert."
-    fi
-else
-    warning "Kein static-Verzeichnis gefunden. Erstelle es..."
     mkdir -p $INSTALL_DIR/static
-
-    # Erstelle Platzhalter-Favicon falls nicht vorhanden
-    if [ ! -f "$INSTALL_DIR/static/favicon.ico" ]; then
-        warning "Erstelle Platzhalter-Favicon..."
-        echo "AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAABILAAASCwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4MezDuLKtz/hx7N54MayoeDFsNHgxa/s4cWv+OHFr/zgxa/t4MWv0uDGsabhx7N53M2/QdbKvQ8AAAAAAAAAAAAAAAAAAAAAxZZrxsWVaP/Unmz/4MCp/+/XwP/z4c//8+LT//Pi0//z4c//79fC/+HBqv/VoG7/xZVo/8WWa8kAAAAAAAAAAAAAAAAAAAAAxpZp/+jMtf/58On/+vHq//nx6f/58en/+fHp//nx6f/58en/+fHp//nx6f/pzbb/xpZp/wAAAAAAAAAAAAAAAAAAAADGmGz/6tC6//v07//79O//+/Tv//v07//79O//+/Tv//v07//79O//+/Tv/+rRu//GmGz/AAAAAAAAAAAAAAAAAAAAAMaab//s1MH//Pbz//z28//89vP//Pbz//z28//89vP//Pbz//z28//89vP/7NXC/8aab/8AAAAAAAAAAAAAAAAAAAAAxpxz/+7YyP/9+fb//fn2//359v/9+fb//359v/9+fb//fn2//359v/u2Mn/xpxz/wAAAAAAAAAAAAAAAAAAAADHn3j/8NzP//78+v/+/Pr//vz6//78+v/+/Pr//vz6//78+v/+/Pr//vz6//Ddz//Hn3j/AAAAAAAAAAAAAAAAAAAAAMiie//y4NX////////////////////////////////////////////////////////////y4db/yKJ7/wAAAAAAAAAAAAAAAAAAAADJpYD/8+Tc/////////////////////////////////////////////////////////////PPl3P/JpYD/AAAAAAAAAAAAAAAAAAAAAMmohf/06OH////////////////////////////////////////////////////////////06OL/yaiF/wAAAAAAAAAAAAAAAAAAAADKrIv/9evn////////////////////////////////////////////////////////////9evn/8qsi/8AAAAAAAAAAAAAAAAAAAAAy6+P//ft6////////////////////////////////////////////////////////////f/37ej/y6+P/wAAAAAAAAAAAAAAAAAAAADLspT/+O/t///////////////////////////////////////////////////////++f/47+3/y7KU/wAAAAAAAAAAAAAAAAAAAADLtZj/+vLx//////////////////////////////////////////////////////////////////ry8f/LtZj/AAAAAAAAAAAAAAAAAAAAAMq1nLTe0cL/8OXf//Hl3//x5d//8eXf//Hl3//x5d//8eXf//Hl3//x5d//8eXf/97Rwv/KtZy1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA" | base64 -d > $INSTALL_DIR/static/favicon.ico
-        log "Platzhalter-Favicon erstellt: $INSTALL_DIR/static/favicon.ico"
-    fi
+    cp -r static/* $INSTALL_DIR/static/
+    log "Statische Dateien kopiert."
+else
+    warning "Kein static-Verzeichnis gefunden."
+    mkdir -p $INSTALL_DIR/static
 fi
 
 # Aktualisiere Template-Dateien
 log "Aktualisiere Template-Dateien..."
 if [ -d "templates" ]; then
-    # Prüfe ob die Export-Funktionalitäts-Templates existieren
-    if [ -f "templates/export.html" ] && [ -f "templates/export_results.html" ]; then
-        log "Export-Funktionalität erkannt."
-    else
-        warning "Die Export-Template-Dateien fehlen. Die Export-Funktionalität könnte beeinträchtigt sein."
-    fi
-
-    # Stelle sicher, dass das Zielverzeichnis existiert
     mkdir -p $TEMPLATES_DIR
-
-    # Kopiere alle Template-Dateien
     cp -r templates/* $TEMPLATES_DIR/
+    log "Template-Dateien kopiert."
 else
     warning "Keine Template-Dateien gefunden."
 fi
