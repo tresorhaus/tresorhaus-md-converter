@@ -377,7 +377,7 @@ def get_wikijs_directories():
     # Use the wikijs module function
     return wikijs.get_directories(WIKIJS_URL, WIKIJS_TOKEN, log_debug)
 
-@app.route('/export', methods=['GET', 'POST'])
+@app.route('/export', methods=['GET', 'POST'], endpoint='export')
 def export_route():
     if request.method == 'POST':
         selected_pages = request.form.getlist('pages')
