@@ -69,8 +69,11 @@ WantedBy=multi-user.target"
 # Benötigte Pakete installieren
 log "Installiere benötigte System-Pakete..."
 apt-get update
-apt-get install -y python3-venv python3-pip pandoc texlive-latex-base texlive-fonts-recommended texlive-latex-extra
-
+apt-get install -y python3-venv python3-pip pandoc \
+    texlive-latex-base texlive-fonts-recommended texlive-latex-extra \
+    wget curl imagemagick python3-pil \
+    libreoffice-writer libreoffice-common \
+    librsvg2-bin fonts-liberation2
 # Benutzer erstellen
 log "Erstelle Service-Benutzer..."
 if id "$SERVICE_USER" &>/dev/null; then
