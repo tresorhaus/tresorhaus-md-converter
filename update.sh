@@ -73,17 +73,34 @@ systemctl stop $SERVICE_NAME
 # Aktualisiere Anwendungsdateien
 log "Aktualisiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
-cp utils.py $INSTALL_DIR/  # Kopieren der utils.py Datei
+cp utils.py $INSTALL_DIR/
+
+# Aktualisiere Moduldateien
+if [ -f "wikijs.py" ]; then
+    log "Aktualisiere Wiki.js-Modul..."
+    cp wikijs.py $INSTALL_DIR/
+else
+    warning "Modul wikijs.py nicht gefunden! Existierende Datei wird nicht überschrieben."
+fi
+
+if [ -f "export.py" ]; then
+    log "Aktualisiere Export-Modul..."
+    cp export.py $INSTALL_DIR/
+else
+    warning "Modul export.py nicht gefunden! Existierende Datei wird nicht überschrieben."
+fi
+
+# Kopiere statische Dateien
 cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || warning "Keine statischen Dateien gefunden."
 
 # Aktualisiere Template-Dateien
 log "Aktualisiere Template-Dateien..."
 if [ -d "templates" ]; then
-    # Prüfe ob die neuen Export-Funktionalitäts-Templates existieren
+    # Prüfe ob die Export-Funktionalitäts-Templates existieren
     if [ -f "templates/export.html" ] && [ -f "templates/export_results.html" ]; then
-        log "Neue Export-Funktionalität erkannt."
+        log "Export-Funktionalität erkannt."
     else
-        warning "Die neuen Export-Template-Dateien fehlen. Die Export-Funktionalität könnte beeinträchtigt sein."
+        warning "Die Export-Template-Dateien fehlen. Die Export-Funktionalität könnte beeinträchtigt sein."
     fi
 
     # Stelle sicher, dass das Zielverzeichnis existiert
@@ -131,6 +148,9 @@ WIKIJS_TOKEN=$WIKIJS_TOKEN
 WIKIJS_EXTERNAL_URL=$WIKIJS_EXTERNAL_URL
 EOF
 fi
+
+# Service-User auslesen
+SERVICE_USER=$(grep "User=" /etc/systemd/system/$SERVICE_NAME.service | cut -d'=' -f2)
 
 # Setze Berechtigungen
 log "Setze Berechtigungen..."

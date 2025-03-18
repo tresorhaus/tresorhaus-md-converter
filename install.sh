@@ -87,7 +87,24 @@ mkdir -p $TEMPLATES_DIR
 # Kopiere Anwendungsdateien
 log "Kopiere Anwendungsdateien..."
 cp app.py $INSTALL_DIR/
-cp utils.py $INSTALL_DIR/  # Kopieren der neuen utils.py Datei
+cp utils.py $INSTALL_DIR/
+
+# Kopiere neue Moduldateien
+if [ -f "wikijs.py" ]; then
+    log "Kopiere Wiki.js-Modul..."
+    cp wikijs.py $INSTALL_DIR/
+else
+    error "Modul wikijs.py fehlt!"
+fi
+
+if [ -f "export.py" ]; then
+    log "Kopiere Export-Modul..."
+    cp export.py $INSTALL_DIR/
+else
+    error "Modul export.py fehlt!"
+fi
+
+# Kopiere statische Dateien
 cp -r static/* $INSTALL_DIR/static/ 2>/dev/null || warning "Keine statischen Dateien gefunden."
 
 # Kopiere Template-Dateien, falls vorhanden
