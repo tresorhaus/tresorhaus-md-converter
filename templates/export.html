@@ -411,7 +411,7 @@
             <p>Wiki.js ist nicht konfiguriert. Bitte setzen Sie die Umgebungsvariablen WIKIJS_URL und WIKIJS_TOKEN.</p>
         </div>
         {% else %}
-        <form id="exportForm" method="POST" action="{{ url_for('export_route') }}">
+        <form id="exportForm" method="POST" action="{{ url_for('export') }}">
             <div class="section">
                 <h3>1. Ausgabeformate auswählen</h3>
                 <div class="format-options">
