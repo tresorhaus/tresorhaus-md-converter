@@ -599,6 +599,20 @@
             color: #aaa;
             border-top: 1px solid #444;
         }
+
+        /* Make file lists more compact */
+        ul {
+            margin: 6px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 3px;
+        }
+
+        /* Prevent button from being duplicated in UI - specific fix */
+        .button-group a:last-of-type {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -610,18 +624,20 @@
         </label>
     </div>
 
-    <header>
+    <div class="container">
         <div class="logo">
             <img src="{{ url_for('static', filename='logo-tresorhaus.svg') }}" alt="TresorHaus Logo">
-            <h1>DocFlow - Export Ergebnisse</h1>
         </div>
-        <nav>
-            <a href="{{ url_for('index') }}">Konvertieren</a>
-            <a href="{{ url_for('export') }}" class="active">Exportieren</a>
-        </nav>
-    </header>
 
-    <main>
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <div class="nav-tab" onclick="location.href='{{ url_for('index') }}'">Dokument zu Wiki.js</div>
+            <div class="nav-tab active">Wiki.js zu Dokument</div>
+        </div>
+
+        <h1>DocFlow - Export Ergebnisse</h1>
+        <p>Die ausgewählten Wiki.js-Seiten wurden in die gewünschten Formate exportiert.</p>
+
         <section class="info-box">
             <h2>Export abgeschlossen</h2>
             <p>Die ausgewählten Wiki.js-Seiten wurden in die gewünschten Formate exportiert.</p>
@@ -664,7 +680,6 @@
             <a href="{{ url_for('export') }}" class="secondary-button">
                 Zurück zum Export
             </a>
-            <a href="{{ url_for('export') }}">Zurück zur Export-Seite</a>
         </div>
 
         {% if debug_logs %}
@@ -681,12 +696,15 @@
                 </div>
             </section>
         {% endif %}
-    </main>
 
-    <footer>
-        <p>© TresorHaus GmbH</p>
-        <p>DocFlow - Ein Dokument-Konverter</p>
-    </footer>
+        <!-- Footer with creator information -->
+        <div class="footer">
+            <div>Entwickelt von Joachim Mild für TresorHaus GmbH</div>
+            <div class="footer-buttons">
+                <button type="button" id="testWikiButton" class="small-button">Wiki.js API testen</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -716,36 +734,29 @@
 
             toggleSwitch.addEventListener('change', switchTheme, false);
 
-            // Debug toggle
-            const debugToggle = document.getElementById('debug-toggle');
-            const debugSection = document.getElementById('debug-section');
+            // Test Wiki.js connection button
+            const testWikiButton = document.getElementById('testWikiButton');
+            if (testWikiButton) {
+                testWikiButton.addEventListener('click', function() {
+                    this.disabled = true;
+                    this.textContent = 'Verbindung wird getestet...';
 
-            debugToggle.addEventListener('click', function() {
-                const isVisible = debugSection.style.display === 'block';
-                debugSection.style.display = isVisible ? 'none' : 'block';
-                debugToggle.textContent = isVisible ?
-                    'Debug-Informationen anzeigen' :
-                    'Debug-Informationen ausblenden';
-            });
-
-            // Debug tabs
-            const debugTabs = document.querySelectorAll('.debug-tabs .nav-tab');
-
-            debugTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs and contents
-                    const tabContents = document.querySelectorAll('.tab-content');
-                    debugTabs.forEach(t => t.classList.remove('active'));
-                    tabContents.forEach(c => c.classList.remove('active'));
-
-                    // Add active class to clicked tab
-                    this.classList.add('active');
-
-                    // Show corresponding content
-                    const tabId = this.getAttribute('data-tab');
-                    document.getElementById(tabId).classList.add('active');
+                    fetch('/test_wikijs_connection', {
+                        method: 'POST',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                    })
+                    .catch(error => {
+                        alert('Fehler beim Testen der Verbindung: ' + error);
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                        this.textContent = 'Wiki.js API testen';
+                    });
                 });
-            });
+            }
         });
     </script>
 </body>
