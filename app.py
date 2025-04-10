@@ -179,7 +179,7 @@ def convert_with_claude(file_path, output_path, file_type, media_type):
             "messages": [
                 {"role": "user", "content": [
                     {"type": "text", "text": f"Please convert this {file_type} file to clean, well-formatted Markdown. Maintain the structure, formatting, and content as accurately as possible."},
-                    {"type": "file", "source": {"type": "base64", "media_type": file_media_type, "data": content_base64}}
+                    {"type": "document", "source": {"type": "base64", "media_type": file_media_type, "data": content_base64}}
                 ]}
             ]
         }
