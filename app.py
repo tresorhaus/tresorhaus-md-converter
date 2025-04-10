@@ -137,16 +137,121 @@ def convert_to_markdown(input_path, output_path):
     # Special handling for PPTX files
     if input_path.lower().endswith(('.ppt', '.pptx')):
         try:
+            # Create a proper temporary directory structure where we have full permissions
+            temp_dir = tempfile.mkdtemp(prefix="docflow_pptx_")
+            temp_input = os.path.join(temp_dir, os.path.basename(input_path))
+            
+            # Copy the input file to the temp directory
+            shutil.copy2(input_path, temp_input)
+            log_debug(f"Kopierte PPTX zur Verarbeitung nach: {temp_input}", "info")
+            
+            # Create a temporary directory for LibreOffice user profile
+            temp_user_dir = os.path.join(temp_dir, "lo_userprofile")
+            os.makedirs(temp_user_dir, exist_ok=True)
+            
             # First convert to HTML using LibreOffice (if available)
-            temp_html = os.path.splitext(input_path)[0] + '.html'
-            libreoffice_cmd = [
-                'libreoffice', '--headless', '--convert-to', 'html',
-                '--outdir', os.path.dirname(input_path), input_path
-            ]
+            temp_html_name = os.path.splitext(os.path.basename(input_path))[0] + '.html'
+            temp_html = os.path.join(temp_dir, temp_html_name)
             
-            log_debug(f"Konvertiere PPTX zu HTML mit LibreOffice: {' '.join(libreoffice_cmd)}")
-            result = subprocess.run(libreoffice_cmd, check=True, capture_output=True, text=True)
+            conversion_successful = False
             
+            try:
+                # First try with libreoffice command
+                libreoffice_cmd = [
+                    'libreoffice',
+                    '--headless',
+                    '--convert-to', 'html',
+                    '-env:UserInstallation=file://' + temp_user_dir.replace(' ', '%20'),
+                    '--outdir', temp_dir,
+                    temp_input
+                ]
+                
+                log_debug(f"Konvertiere PPTX zu HTML mit LibreOffice: {' '.join(libreoffice_cmd)}")
+                result = subprocess.run(libreoffice_cmd, check=True, capture_output=True, text=True)
+                conversion_successful = True
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                # If libreoffice command fails, try with soffice command (alternative command name)
+                log_debug(f"LibreOffice-Befehl schlug fehl, versuche mit soffice-Befehl: {e}", "warning")
+                try:
+                    soffice_cmd = [
+                        'soffice',
+                        '--headless',
+                        '--convert-to', 'html',
+                        '-env:UserInstallation=file://' + temp_user_dir.replace(' ', '%20'),
+                        '--outdir', temp_dir,
+                        temp_input
+                    ]
+                    
+                    log_debug(f"Konvertiere PPTX zu HTML mit soffice: {' '.join(soffice_cmd)}")
+                    result = subprocess.run(soffice_cmd, check=True, capture_output=True, text=True)
+                    conversion_successful = True
+                except (subprocess.CalledProcessError, FileNotFoundError) as e2:
+                    # If both commands fail, try another approach with a temporary directory
+                    log_debug(f"Auch soffice-Befehl schlug fehl: {e2}", "warning")
+                    log_debug("Versuche mit temporärem Heimatverzeichnis", "info")
+                    
+                    # Set HOME environment variable to the temporary directory
+                    try:
+                        env = os.environ.copy()
+                        env['HOME'] = temp_dir
+                        
+                        final_cmd = [
+                            'libreoffice',
+                            '--headless',
+                            '--convert-to', 'html',
+                            '--outdir', temp_dir,
+                            temp_input
+                        ]
+                        
+                        log_debug(f"Konvertiere PPTX zu HTML mit temporärem HOME: {' '.join(final_cmd)}", "info")
+                        result = subprocess.run(final_cmd, env=env, check=True, capture_output=True, text=True)
+                        conversion_successful = True
+                    except Exception as e3:
+                        # Try one last approach - create a complete user directory structure
+                        log_debug(f"Auch temporäres HOME schlug fehl: {e3}", "warning")
+                        log_debug("Versuche mit vorbereitetem Benutzerverzeichnis", "info")
+                        
+                        # Create a complete user directory structure for LibreOffice
+                        cache_dir = os.path.join(temp_dir, ".cache")
+                        config_dir = os.path.join(temp_dir, ".config")
+                        for d in [cache_dir, config_dir]:
+                            os.makedirs(d, exist_ok=True)
+                        
+                        try:
+                            # Set multiple environment variables
+                            env = os.environ.copy()
+                            env['HOME'] = temp_dir
+                            env['XDG_CONFIG_HOME'] = config_dir
+                            env['XDG_CACHE_HOME'] = cache_dir
+                            
+                            last_cmd = [
+                                'libreoffice',
+                                '--headless',
+                                '--convert-to', 'html',
+                                '--outdir', temp_dir,
+                                temp_input
+                            ]
+                            
+                            log_debug(f"Letzter Versuch mit strukturiertem Benutzerverzeichnis: {' '.join(last_cmd)}", "info")
+                            result = subprocess.run(last_cmd, env=env, check=True, capture_output=True, text=True)
+                            conversion_successful = True
+                        except Exception as e4:
+                            # Capture the full error message
+                            error_detail = f"{str(e4)}"
+                            if hasattr(e4, 'stderr') and e4.stderr:
+                                error_detail += f" stderr: {e4.stderr}"
+                            
+                            log_debug(f"Alle Versuche, PPTX zu konvertieren, sind fehlgeschlagen: {error_detail}", "error")
+                            
+                            # Clean up and return error
+                            try:
+                                shutil.rmtree(temp_dir)
+                            except Exception as e5:
+                                log_debug(f"Konnte temporäres Verzeichnis nicht löschen: {e5}", "warning")
+                                
+                            return False, f"PPTX-Konvertierung fehlgeschlagen nach allen Versuchen: {error_detail}"
+                
+            # After trying all methods, check if we succeeded
             if os.path.exists(temp_html):
                 # Then convert HTML to Markdown using Pandoc
                 log_debug(f"Konvertiere HTML zu Markdown mit Pandoc")
@@ -158,10 +263,20 @@ def convert_to_markdown(input_path, output_path):
                     '-o', output_path
                 ], check=True, capture_output=True, text=True)
                 
-                # Clean up temporary HTML file
-                os.remove(temp_html)
+                # Clean up the temporary directory
+                try:
+                    shutil.rmtree(temp_dir)
+                except Exception as e:
+                    log_debug(f"Warnung: Konnte temporäres Verzeichnis nicht löschen: {e}", "warning")
+                
                 return True, "Konvertierung erfolgreich"
             else:
+                # Clean up the temporary directory
+                try:
+                    shutil.rmtree(temp_dir)
+                except Exception as e:
+                    log_debug(f"Warnung: Konnte temporäres Verzeichnis nicht löschen: {e}", "warning")
+                
                 error_msg = "LibreOffice konnte keine HTML-Datei generieren"
                 log_debug(error_msg, "error")
                 return False, error_msg
