@@ -159,6 +159,19 @@ def convert_with_claude(file_path, output_path, file_type, media_type):
             "content-type": "application/json"
         }
         
+        # Use correct media types based on file type
+        correct_media_types = {
+            'ppt': 'application/vnd.ms-powerpoint',
+            'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        }
+        
+        # Use correct media type or fallback to the provided one
+        file_media_type = correct_media_types.get(file_type, media_type)
+        
+        log_debug(f"Verwende Media Type: {file_media_type} für {file_type}", "info")
+        
         # Prepare the payload for Claude API
         payload = {
             "model": "claude-3-sonnet-20240229",
@@ -166,7 +179,7 @@ def convert_with_claude(file_path, output_path, file_type, media_type):
             "messages": [
                 {"role": "user", "content": [
                     {"type": "text", "text": f"Please convert this {file_type} file to clean, well-formatted Markdown. Maintain the structure, formatting, and content as accurately as possible."},
-                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": content_base64}}
+                    {"type": "file", "source": {"type": "base64", "media_type": file_media_type, "data": content_base64}}
                 ]}
             ]
         }
