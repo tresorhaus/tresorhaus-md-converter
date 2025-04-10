@@ -42,6 +42,16 @@ read -p "Wiki.js URL eingeben (z.B. http://wiki.example.com): " WIKIJS_URL
 read -p "Wiki.js API Token eingeben: " WIKIJS_TOKEN
 read -p "Wiki.js External URL eingeben (für Links, meist identisch mit Wiki.js URL): " WIKIJS_EXTERNAL_URL
 
+# Claude API Key abfragen
+read -p "Claude API Key eingeben (für KI-gestützte Dokumentenkonvertierung): " CLAUDE_API_KEY
+read -p "Claude Dateitypen eingeben (kommaseparierte Liste, Standard: pptx,ppt,docx,doc): " CLAUDE_FILE_TYPES
+
+# Wenn keine Dateitypen angegeben wurden, Standard verwenden
+if [ -z "$CLAUDE_FILE_TYPES" ]; then
+    CLAUDE_FILE_TYPES="pptx,ppt,docx,doc"
+    warning "Keine Dateitypen angegeben. Verwende Standard: $CLAUDE_FILE_TYPES"
+fi
+
 # Wenn keine externe URL angegeben wurde, die normale URL verwenden
 if [ -z "$WIKIJS_EXTERNAL_URL" ]; then
     WIKIJS_EXTERNAL_URL="$WIKIJS_URL"
@@ -72,7 +82,6 @@ apt-get update
 apt-get install -y python3-venv python3-pip pandoc \
     texlive-latex-base texlive-fonts-recommended texlive-latex-extra \
     wget curl imagemagick python3-pil \
-    libreoffice-writer libreoffice-common \
     librsvg2-bin fonts-liberation2
 # Benutzer erstellen
 log "Erstelle Service-Benutzer..."
@@ -131,6 +140,8 @@ cat > $INSTALL_DIR/.env << EOF
 WIKIJS_URL=$WIKIJS_URL
 WIKIJS_TOKEN=$WIKIJS_TOKEN
 WIKIJS_EXTERNAL_URL=$WIKIJS_EXTERNAL_URL
+CLAUDE_API_KEY=$CLAUDE_API_KEY
+CLAUDE_FILE_TYPES=$CLAUDE_FILE_TYPES
 EOF
 
 # Erstelle requirements.txt falls nicht vorhanden
@@ -193,6 +204,8 @@ echo -e "Service-Benutzer: $SERVICE_USER"
 echo -e "Web-Interface: http://localhost:5000"
 echo -e "Wiki.js URL: $WIKIJS_URL"
 echo -e "Wiki.js External URL: $WIKIJS_EXTERNAL_URL"
+echo -e "Claude API: ${CLAUDE_API_KEY:0:3}...${CLAUDE_API_KEY: -3}"
+echo -e "Claude Dateitypen: $CLAUDE_FILE_TYPES"
 echo -e "Templates-Verzeichnis: $TEMPLATES_DIR"
 echo -e "\nBefehle für die Verwaltung:"
 echo -e "  Status anzeigen:    sudo systemctl status $SERVICE_NAME"

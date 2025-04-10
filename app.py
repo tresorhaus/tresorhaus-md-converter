@@ -21,6 +21,9 @@ import io
 from datetime import datetime
 from dotenv import load_dotenv
 import re
+import requests
+import json
+import base64
 
 # Import utils functions
 from utils import (
@@ -51,6 +54,13 @@ ALLOWED_EXTENSIONS = {
 WIKIJS_URL = os.getenv('WIKIJS_URL')
 WIKIJS_EXTERNAL_URL = os.getenv('WIKIJS_EXTERNAL_URL')
 WIKIJS_TOKEN = os.getenv('WIKIJS_TOKEN')
+
+# Claude API Konfiguration
+CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
+CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
+# Konfiguriere, welche Dateitypen mit Claude konvertiert werden sollen
+# Unterstützte Formate: ppt, pptx, doc, docx
+CLAUDE_FILE_TYPES = os.getenv('CLAUDE_FILE_TYPES', 'pptx,ppt,docx,doc').split(',')
 
 # Format-Mapping für Pandoc
 FORMAT_MAPPING = {
@@ -125,8 +135,69 @@ def log_debug(message, log_type='info'):
     })
     print(f"[{timestamp}] {log_type.upper()}: {message}")
 
+# Function to convert using Claude API
+def convert_with_claude(file_path, output_path, file_type, media_type):
+    """Konvertiert eine Datei in Markdown mithilfe der Claude API"""
+    if not CLAUDE_API_KEY:
+        log_debug("Claude API Key fehlt. Bitte in .env-Datei konfigurieren.", "error")
+        return False, "Claude API Key fehlt. Konfigurieren Sie ihn in der .env-Datei."
+    
+    log_debug(f"Konvertiere {file_type}-Datei mit Claude API: {file_path}", "info")
+    
+    try:
+        # Read the file content as binary
+        with open(file_path, 'rb') as file:
+            file_content = file.read()
+        
+        # Encode file content as base64
+        content_base64 = base64.b64encode(file_content).decode('utf-8')
+        
+        # Prepare headers with API key
+        headers = {
+            "x-api-key": CLAUDE_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        }
+        
+        # Prepare the payload for Claude API
+        payload = {
+            "model": "claude-3-sonnet-20240229",
+            "max_tokens": 4000,
+            "messages": [
+                {"role": "user", "content": [
+                    {"type": "text", "text": f"Please convert this {file_type} file to clean, well-formatted Markdown. Maintain the structure, formatting, and content as accurately as possible."},
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": content_base64}}
+                ]}
+            ]
+        }
+        
+        # Make the API call
+        log_debug("Sende Anfrage an Claude API...", "info")
+        response = requests.post(CLAUDE_API_URL, headers=headers, json=payload)
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            result = response.json()
+            markdown_content = result["content"][0]["text"]
+            
+            # Save the markdown content to the output file
+            with open(output_path, 'w', encoding='utf-8') as output_file:
+                output_file.write(markdown_content)
+            
+            log_debug(f"Claude API hat die Konvertierung erfolgreich abgeschlossen", "success")
+            return True, "Konvertierung erfolgreich"
+        else:
+            error_message = f"Claude API Fehler: {response.status_code} - {response.text}"
+            log_debug(error_message, "error")
+            return False, error_message
+            
+    except Exception as e:
+        error_message = f"Fehler bei der Claude API-Konvertierung: {str(e)}"
+        log_debug(error_message, "error")
+        return False, error_message
+
 def convert_to_markdown(input_path, output_path):
-    """Konvertiert eine Datei in Markdown mithilfe von pandoc"""
+    """Konvertiert eine Datei in Markdown mithilfe von pandoc oder Claude"""
     input_format = get_input_format(input_path)
 
     # Create directory if it doesn't exist
@@ -134,180 +205,43 @@ def convert_to_markdown(input_path, output_path):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    # Special handling for PPTX files
-    if input_path.lower().endswith(('.ppt', '.pptx')):
-        try:
-            # Create a proper temporary directory structure where we have full permissions
-            temp_dir = tempfile.mkdtemp(prefix="docflow_pptx_")
-            temp_input = os.path.join(temp_dir, os.path.basename(input_path))
-            
-            # Copy the input file to the temp directory
-            shutil.copy2(input_path, temp_input)
-            log_debug(f"Kopierte PPTX zur Verarbeitung nach: {temp_input}", "info")
-            
-            # Create a temporary directory for LibreOffice user profile
-            temp_user_dir = os.path.join(temp_dir, "lo_userprofile")
-            os.makedirs(temp_user_dir, exist_ok=True)
-            
-            # First convert to HTML using LibreOffice (if available)
-            temp_html_name = os.path.splitext(os.path.basename(input_path))[0] + '.html'
-            temp_html = os.path.join(temp_dir, temp_html_name)
-            
-            conversion_successful = False
-            
-            try:
-                # First try with libreoffice command
-                libreoffice_cmd = [
-                    'libreoffice',
-                    '--headless',
-                    '--convert-to', 'html',
-                    '-env:UserInstallation=file://' + temp_user_dir.replace(' ', '%20'),
-                    '--outdir', temp_dir,
-                    temp_input
-                ]
-                
-                log_debug(f"Konvertiere PPTX zu HTML mit LibreOffice: {' '.join(libreoffice_cmd)}")
-                result = subprocess.run(libreoffice_cmd, check=True, capture_output=True, text=True)
-                conversion_successful = True
-            except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                # If libreoffice command fails, try with soffice command (alternative command name)
-                log_debug(f"LibreOffice-Befehl schlug fehl, versuche mit soffice-Befehl: {e}", "warning")
-                try:
-                    soffice_cmd = [
-                        'soffice',
-                        '--headless',
-                        '--convert-to', 'html',
-                        '-env:UserInstallation=file://' + temp_user_dir.replace(' ', '%20'),
-                        '--outdir', temp_dir,
-                        temp_input
-                    ]
-                    
-                    log_debug(f"Konvertiere PPTX zu HTML mit soffice: {' '.join(soffice_cmd)}")
-                    result = subprocess.run(soffice_cmd, check=True, capture_output=True, text=True)
-                    conversion_successful = True
-                except (subprocess.CalledProcessError, FileNotFoundError) as e2:
-                    # If both commands fail, try another approach with a temporary directory
-                    log_debug(f"Auch soffice-Befehl schlug fehl: {e2}", "warning")
-                    log_debug("Versuche mit temporärem Heimatverzeichnis", "info")
-                    
-                    # Set HOME environment variable to the temporary directory
-                    try:
-                        env = os.environ.copy()
-                        env['HOME'] = temp_dir
-                        
-                        final_cmd = [
-                            'libreoffice',
-                            '--headless',
-                            '--convert-to', 'html',
-                            '--outdir', temp_dir,
-                            temp_input
-                        ]
-                        
-                        log_debug(f"Konvertiere PPTX zu HTML mit temporärem HOME: {' '.join(final_cmd)}", "info")
-                        result = subprocess.run(final_cmd, env=env, check=True, capture_output=True, text=True)
-                        conversion_successful = True
-                    except Exception as e3:
-                        # Try one last approach - create a complete user directory structure
-                        log_debug(f"Auch temporäres HOME schlug fehl: {e3}", "warning")
-                        log_debug("Versuche mit vorbereitetem Benutzerverzeichnis", "info")
-                        
-                        # Create a complete user directory structure for LibreOffice
-                        cache_dir = os.path.join(temp_dir, ".cache")
-                        config_dir = os.path.join(temp_dir, ".config")
-                        for d in [cache_dir, config_dir]:
-                            os.makedirs(d, exist_ok=True)
-                        
-                        try:
-                            # Set multiple environment variables
-                            env = os.environ.copy()
-                            env['HOME'] = temp_dir
-                            env['XDG_CONFIG_HOME'] = config_dir
-                            env['XDG_CACHE_HOME'] = cache_dir
-                            
-                            last_cmd = [
-                                'libreoffice',
-                                '--headless',
-                                '--convert-to', 'html',
-                                '--outdir', temp_dir,
-                                temp_input
-                            ]
-                            
-                            log_debug(f"Letzter Versuch mit strukturiertem Benutzerverzeichnis: {' '.join(last_cmd)}", "info")
-                            result = subprocess.run(last_cmd, env=env, check=True, capture_output=True, text=True)
-                            conversion_successful = True
-                        except Exception as e4:
-                            # Capture the full error message
-                            error_detail = f"{str(e4)}"
-                            if hasattr(e4, 'stderr') and e4.stderr:
-                                error_detail += f" stderr: {e4.stderr}"
-                            
-                            log_debug(f"Alle Versuche, PPTX zu konvertieren, sind fehlgeschlagen: {error_detail}", "error")
-                            
-                            # Clean up and return error
-                            try:
-                                shutil.rmtree(temp_dir)
-                            except Exception as e5:
-                                log_debug(f"Konnte temporäres Verzeichnis nicht löschen: {e5}", "warning")
-                                
-                            return False, f"PPTX-Konvertierung fehlgeschlagen nach allen Versuchen: {error_detail}"
-                
-            # After trying all methods, check if we succeeded
-            if os.path.exists(temp_html):
-                # Then convert HTML to Markdown using Pandoc
-                log_debug(f"Konvertiere HTML zu Markdown mit Pandoc")
-                pandoc_result = subprocess.run([
-                    'pandoc',
-                    temp_html,
-                    '-f', 'html',
-                    '-t', 'markdown',
-                    '-o', output_path
-                ], check=True, capture_output=True, text=True)
-                
-                # Clean up the temporary directory
-                try:
-                    shutil.rmtree(temp_dir)
-                except Exception as e:
-                    log_debug(f"Warnung: Konnte temporäres Verzeichnis nicht löschen: {e}", "warning")
-                
-                return True, "Konvertierung erfolgreich"
-            else:
-                # Clean up the temporary directory
-                try:
-                    shutil.rmtree(temp_dir)
-                except Exception as e:
-                    log_debug(f"Warnung: Konnte temporäres Verzeichnis nicht löschen: {e}", "warning")
-                
-                error_msg = "LibreOffice konnte keine HTML-Datei generieren"
-                log_debug(error_msg, "error")
-                return False, error_msg
-                
-        except subprocess.CalledProcessError as e:
-            error_msg = f"Fehler bei der PPTX-Konvertierung: {e.stderr}"
-            log_debug(error_msg, "error")
-            return False, error_msg
-        except FileNotFoundError as e:
-            error_msg = "LibreOffice ist nicht installiert oder nicht im PATH"
-            log_debug(f"{error_msg}: {e}", "error")
-            return False, error_msg
-    else:
-        # Standard Pandoc conversion for other formats
-        try:
-            result = subprocess.run([
-                'pandoc',
-                input_path,
-                '-f', input_format,
-                '-t', 'markdown',
-                '-o', output_path
-            ], check=True, capture_output=True, text=True)
-            return True, "Konvertierung erfolgreich"
-        except subprocess.CalledProcessError as e:
-            error_msg = f"Pandoc-Fehler: {e.stderr}"
-            log_debug(error_msg, "error")
-            return False, error_msg
-        except FileNotFoundError as e:
-            error_msg = "Pandoc ist nicht installiert oder nicht im PATH"
-            log_debug(f"{error_msg}: {e}", "error")
-            return False, error_msg
+    # Determine which files to convert with Claude API
+    file_extension = os.path.splitext(input_path.lower())[1][1:]  # Remove the dot
+    
+    # Check if this file type should be processed with Claude
+    if file_extension in CLAUDE_FILE_TYPES:
+        # Determine appropriate media type
+        media_types = {
+            'ppt': 'application/vnd.ms-powerpoint',
+            'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        }
+        
+        media_type = media_types.get(file_extension, f"application/{file_extension}")
+        
+        log_debug(f"Verwende Claude API für {file_extension} Konvertierung", "info")
+        return convert_with_claude(input_path, output_path, file_extension, media_type)
+        
+    # Standard Pandoc conversion for other formats
+    try:
+        log_debug(f"Verwende Pandoc für {input_format} Konvertierung", "info")
+        result = subprocess.run([
+            'pandoc',
+            input_path,
+            '-f', input_format,
+            '-t', 'markdown',
+            '-o', output_path
+        ], check=True, capture_output=True, text=True)
+        return True, "Konvertierung erfolgreich"
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Pandoc-Fehler: {e.stderr}"
+        log_debug(error_msg, "error")
+        return False, error_msg
+    except FileNotFoundError as e:
+        error_msg = "Pandoc ist nicht installiert oder nicht im PATH"
+        log_debug(f"{error_msg}: {e}", "error")
+        return False, error_msg
 
 def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wiki_titles=None, username=None, default_folder=None):
     """Verarbeitet hochgeladene Dateien und konvertiert sie zu Markdown"""

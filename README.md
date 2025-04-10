@@ -16,11 +16,18 @@ DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentf
   - E-Books (EPUB)
   - Weitere Formate (RST, Textile, MediaWiki, DocBook, AsciiDoc, Org-mode)
 
-- **PowerPoint (PPTX) Konvertierung:**
-  - Spezielle zweistufige Konvertierung für PowerPoint-Präsentationen
-  - Wandelt PPTX-Dateien zunächst in HTML um (mit LibreOffice)
-  - Konvertiert dann HTML in strukturiertes Markdown
-  - Optimierte Fehlerbehandlung mit detaillierten Diagnosen
+- **KI-gestützte PowerPoint (PPTX) Konvertierung:**
+  - Intelligente Konvertierung von Präsentationen mit Claude 3.7 Sonnet API
+  - Präzise Inhaltsübertragung und Strukturerhaltung
+  - Fortschrittliche Bildverarbeitung für Diagramme und Grafiken
+  - Optimale Formatierung der Ausgabe in Markdown
+
+- **KI-gestützte Dokumentenkonvertierung:**
+  - Unterstützung für verschiedene Dateiformate (PPTX, PPT, DOCX, DOC)
+  - Intelligente Konvertierung mit Claude 3.7 Sonnet API
+  - Präzise Inhaltsübertragung und Strukturerhaltung
+  - Fortschrittliche Erkennung von Tabellen, Diagrammen und komplexen Layouts
+  - Hochwertige Markdown-Ausgabe mit optimaler Formatierung
 
 - **Intuitive Weboberfläche:**
   - Drag & Drop Upload
@@ -63,7 +70,7 @@ DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentf
 - Internetverbindung
 - Pandoc (wird automatisch installiert)
 - Python 3.8+ (wird automatisch installiert, falls nicht vorhanden)
-- LibreOffice (wird für PPTX-Konvertierung benötigt)
+- Claude API Key (für die PPTX-Konvertierung)
 
 ### Automatische Installation
 
@@ -83,6 +90,7 @@ DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentf
    - Wiki.js URL (z.B. http://wiki.example.com)
    - Wiki.js API Token
    - Wiki.js External URL (für Links, meist identisch mit Wiki.js URL)
+   - Claude API Key (für die KI-gestützte Dokumentenkonvertierung)
 
 ### Manuelle Installation
 
@@ -102,16 +110,13 @@ DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentf
    sudo apt-get install pandoc
    ```
 
-4. **LibreOffice installieren (für PPTX-Konvertierung):**
-   ```bash
-   sudo apt-get install libreoffice
-   ```
-
-5. **Konfigurationsdatei erstellen (.env):**
+4. **Konfigurationsdatei erstellen (.env):**
    ```
    WIKIJS_URL=https://ihr-wiki.js-url
    WIKIJS_TOKEN=ihr-api-token
    WIKIJS_EXTERNAL_URL=https://ihre-externe-wiki-url
+   CLAUDE_API_KEY=ihr-claude-api-key
+   CLAUDE_FILE_TYPES=pptx,ppt,docx,doc
    ```
 
 ## 🔄 Aktualisierung
@@ -122,7 +127,7 @@ So aktualisieren Sie die Anwendung:
 sudo ./update.sh
 ```
 
-Das Update-Skript erstellt automatisch ein Backup und bietet die Möglichkeit, die Wiki.js-Konfiguration zu aktualisieren.
+Das Update-Skript erstellt automatisch ein Backup und bietet die Möglichkeit, die Wiki.js- und Claude-API-Konfiguration zu aktualisieren.
 
 ## 🗑 Deinstallation
 
@@ -174,10 +179,11 @@ python app.py
 #### PowerPoint (PPTX) Konvertierung
 
 Bei der Konvertierung von PowerPoint-Präsentationen:
-1. Stellen Sie sicher, dass LibreOffice installiert ist
-2. Die App konvertiert PPTX-Dateien automatisch in zwei Schritten:
-   - PPTX → HTML (mit LibreOffice)
-   - HTML → Markdown (mit Pandoc)
+1. Stellen Sie sicher, dass ein gültiger Claude API Key konfiguriert ist
+2. Die App konvertiert PPTX-Dateien automatisch unter Einsatz der Claude KI:
+   - Präsentationen werden zur Claude API gesendet
+   - Die KI analysiert und interpretiert den Inhalt
+   - Ergebnis ist ein präzise strukturiertes Markdown-Dokument
 3. Der Prozess läuft transparent im Hintergrund
 4. Bei Fehlern werden detaillierte Diagnoseinformationen angezeigt
 
@@ -199,6 +205,8 @@ Die Anwendung kann über verschiedene Umgebungsvariablen konfiguriert werden:
 - `WIKIJS_URL`: URL zur Wiki.js API (erforderlich für Wiki.js-Integration)
 - `WIKIJS_TOKEN`: API-Schlüssel für Wiki.js (erforderlich für Wiki.js-Integration)
 - `WIKIJS_EXTERNAL_URL`: Externe URL für Wiki.js (für korrekte Links, optional)
+- `CLAUDE_API_KEY`: API-Schlüssel für Claude (erforderlich für KI-gestützte Konvertierung)
+- `CLAUDE_FILE_TYPES`: Kommaseparierte Liste von Dateiformaten, die mit Claude konvertiert werden sollen (Standard: pptx,ppt,docx,doc)
 - `PORT`: Server-Port (Standard: 5000)
 - `HOST`: Host-Adresse (Standard: 0.0.0.0)
 - `DEBUG`: Debug-Modus (Standard: True)
@@ -232,10 +240,11 @@ tresorhaus-docflow/
 
 ### Häufige Probleme und Lösungen
 
-1. **PPTX-Konvertierung schlägt fehl:**
-   - Stellen Sie sicher, dass LibreOffice installiert ist: `sudo apt-get install libreoffice`
-   - Überprüfen Sie die Debug-Informationen für detaillierte Fehlermeldungen
-   - Versuchen Sie, die PPTX-Datei in einem neueren PowerPoint-Format zu speichern
+1. **Claude API Fehler bei PPTX-Konvertierung:**
+   - Überprüfen Sie, ob der Claude API Key korrekt in der .env-Datei konfiguriert ist
+   - Stellen Sie sicher, dass Sie über ausreichend API-Guthaben verfügen
+   - Prüfen Sie die Internetverbindung, die API-Calls erfordern eine stabile Verbindung
+   - Bei großen Präsentationen kann die Dateigrößenbeschränkung der API überschritten werden
 
 2. **Service startet nicht:**
    ```bash

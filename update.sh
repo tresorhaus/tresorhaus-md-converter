@@ -58,6 +58,13 @@ if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
     read -p "Neue Wiki.js External URL eingeben (leer lassen für keine Änderung): " NEW_WIKIJS_EXTERNAL_URL
 fi
 
+# Claude AI Konfiguration aktualisieren?
+read -p "Claude AI Konfiguration aktualisieren? (j/n): " UPDATE_CLAUDE
+if [[ $UPDATE_CLAUDE =~ ^[Jj]$ ]]; then
+    read -p "Neuen Claude API Key eingeben (leer lassen für keine Änderung): " NEW_CLAUDE_API_KEY
+    read -p "Neue Claude Dateitypen eingeben (leer lassen für keine Änderung, Standard: pptx,ppt,docx,doc): " NEW_CLAUDE_FILE_TYPES
+fi
+
 # Backup erstellen
 log "Erstelle Backup..."
 mkdir -p $BACKUP_DIR
@@ -120,26 +127,41 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # Update .env wenn Wiki.js Konfiguration aktualisiert werden soll
-if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
-    log "Aktualisiere Wiki.js Konfiguration..."
+if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]] || [[ $UPDATE_CLAUDE =~ ^[Jj]$ ]]; then
+    log "Aktualisiere Konfiguration..."
 
     # Lade aktuelle .env Datei
     source $INSTALL_DIR/.env
 
-    # Aktualisiere nur die angegebenen Werte
-    if [ ! -z "$NEW_WIKIJS_URL" ]; then
-        WIKIJS_URL="$NEW_WIKIJS_URL"
-        log "Wiki.js URL aktualisiert zu: $WIKIJS_URL"
-    fi
+    # Aktualisiere nur die angegebenen Werte für Wiki.js
+    if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
+        if [ ! -z "$NEW_WIKIJS_URL" ]; then
+            WIKIJS_URL="$NEW_WIKIJS_URL"
+            log "Wiki.js URL aktualisiert zu: $WIKIJS_URL"
+        fi
 
-    if [ ! -z "$NEW_WIKIJS_TOKEN" ]; then
-        WIKIJS_TOKEN="$NEW_WIKIJS_TOKEN"
-        log "Wiki.js API Token aktualisiert"
-    fi
+        if [ ! -z "$NEW_WIKIJS_TOKEN" ]; then
+            WIKIJS_TOKEN="$NEW_WIKIJS_TOKEN"
+            log "Wiki.js API Token aktualisiert"
+        fi
 
-    if [ ! -z "$NEW_WIKIJS_EXTERNAL_URL" ]; then
-        WIKIJS_EXTERNAL_URL="$NEW_WIKIJS_EXTERNAL_URL"
-        log "Wiki.js External URL aktualisiert zu: $WIKIJS_EXTERNAL_URL"
+        if [ ! -z "$NEW_WIKIJS_EXTERNAL_URL" ]; then
+            WIKIJS_EXTERNAL_URL="$NEW_WIKIJS_EXTERNAL_URL"
+            log "Wiki.js External URL aktualisiert zu: $WIKIJS_EXTERNAL_URL"
+        fi
+    fi
+    
+    # Aktualisiere nur die angegebenen Werte für Claude
+    if [[ $UPDATE_CLAUDE =~ ^[Jj]$ ]]; then
+        if [ ! -z "$NEW_CLAUDE_API_KEY" ]; then
+            CLAUDE_API_KEY="$NEW_CLAUDE_API_KEY"
+            log "Claude API Key aktualisiert"
+        fi
+
+        if [ ! -z "$NEW_CLAUDE_FILE_TYPES" ]; then
+            CLAUDE_FILE_TYPES="$NEW_CLAUDE_FILE_TYPES"
+            log "Claude Dateitypen aktualisiert zu: $CLAUDE_FILE_TYPES"
+        fi
     fi
 
     # Schreibe aktualisierte .env Datei
@@ -147,6 +169,8 @@ if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
 WIKIJS_URL=$WIKIJS_URL
 WIKIJS_TOKEN=$WIKIJS_TOKEN
 WIKIJS_EXTERNAL_URL=$WIKIJS_EXTERNAL_URL
+CLAUDE_API_KEY=$CLAUDE_API_KEY
+CLAUDE_FILE_TYPES=$CLAUDE_FILE_TYPES
 EOF
 fi
 
@@ -183,6 +207,11 @@ echo -e "Web-Interface: http://localhost:5000"
 if [[ $UPDATE_WIKIJS =~ ^[Jj]$ ]]; then
     echo -e "Wiki.js URL: $WIKIJS_URL"
     echo -e "Wiki.js External URL: $WIKIJS_EXTERNAL_URL"
+fi
+
+if [[ $UPDATE_CLAUDE =~ ^[Jj]$ ]]; then
+    echo -e "Claude API: ${CLAUDE_API_KEY:0:3}...${CLAUDE_API_KEY: -3}"
+    echo -e "Claude Dateitypen: $CLAUDE_FILE_TYPES"
 fi
 
 echo -e "\nBefehle für die Verwaltung:"
