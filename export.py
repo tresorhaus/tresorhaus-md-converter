@@ -49,7 +49,7 @@ def export_pages_to_formats(page_paths, formats, session_id, result_folder, wiki
     os.makedirs(export_dir, exist_ok=True)
 
     converted_files = []
-    failed_files = []
+    failed_files = {}
     debug_data = {}
 
     for page_path in page_paths:
@@ -68,7 +68,7 @@ def export_pages_to_formats(page_paths, formats, session_id, result_folder, wiki
             if not page_content:
                 error_msg = "No content found"
                 log_debug(f"No content found for page: {page_path}", "error")
-                failed_files.append(f"{page_path} (no content)")
+                failed_files[page_path] = "Kein Inhalt gefunden"
                 continue
 
             # If no title was returned, use the last part of the path
@@ -126,14 +126,14 @@ def export_pages_to_formats(page_paths, formats, session_id, result_folder, wiki
                     log_debug(f"Successfully converted {page_title} to {output_format}", "success")
                 except subprocess.CalledProcessError as e:
                     log_debug(f"Pandoc error converting {page_title} to {output_format}: {e.stderr}", "error")
-                    failed_files.append(f"{page_title} ({output_format})")
+                    failed_files[f"{page_title} ({output_format})"] = f"Pandoc-Fehler: {e.stderr}"
                 except Exception as e:
                     log_debug(f"Error converting {page_title} to {output_format}: {str(e)}", "error")
-                    failed_files.append(f"{page_title} ({output_format})")
+                    failed_files[f"{page_title} ({output_format})"] = str(e)
 
         except Exception as e:
             log_debug(f"Unexpected error processing {page_path}: {str(e)}", "error")
-            failed_files.append(page_path)
+            failed_files[page_path] = str(e)
 
     return converted_files, failed_files, debug_data
 

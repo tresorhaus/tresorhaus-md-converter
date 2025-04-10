@@ -619,6 +619,13 @@
         li {
             margin-bottom: 3px;
         }
+
+        div.error-message {
+            color: #dc3545;
+            font-size: 0.9em;
+            margin-top: 3px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body class="dark-theme">
@@ -671,8 +678,13 @@
                 <section class="error-section">
                     <h4>Fehlgeschlagene Exporte ({{ failed_files|length }}):</h4>
                     <ul class="file-list error-list">
-                        {% for file in failed_files %}
-                            <li>{{ file }}</li>
+                        {% for file, error_msg in failed_files.items() %}
+                            <li>
+                                {{ file }}
+                                {% if error_msg %}
+                                <div class="error-message">{{ error_msg }}</div>
+                                {% endif %}
+                            </li>
                         {% endfor %}
                     </ul>
                 </section>

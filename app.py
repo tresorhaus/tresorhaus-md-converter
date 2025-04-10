@@ -176,7 +176,7 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
         log_debug(f"Ergebnis-Verzeichnis erstellt: {result_dir}")
 
     converted_files = []
-    failed_files = []
+    failed_files = {}
     wiki_urls = {}
 
     log_debug(f"{len(files)} Datei(en) für die Verarbeitung empfangen")
@@ -256,12 +256,13 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
                         log_debug(f"Fehler beim Lesen/Hochladen von {output_filename}: {str(e)}", "error")
             else:
                 log_debug(f"Konvertierung fehlgeschlagen: {filename}", "error")
-                failed_files.append(filename)
+                failed_files[filename] = "Konvertierung fehlgeschlagen"
         else:
             if not file:
                 log_debug("Leerer Datei-Eintrag übersprungen", "error")
             else:
                 log_debug(f"Ungültiges Dateiformat: {file.filename}", "error")
+                failed_files[file.filename] = "Ungültiges Dateiformat"
 
     log_debug(f"Verarbeitung abgeschlossen: {len(converted_files)} konvertiert, {len(failed_files)} fehlgeschlagen")
     return converted_files, failed_files, wiki_urls
