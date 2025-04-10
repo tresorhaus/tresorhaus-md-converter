@@ -133,19 +133,66 @@ def convert_to_markdown(input_path, output_path):
     output_dir = os.path.dirname(output_path)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
-    try:
-        subprocess.run([
-            'pandoc',
-            input_path,
-            '-f', input_format,
-            '-t', 'markdown',
-            '-o', output_path
-        ], check=True)
-        return True
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"Fehler bei der Konvertierung von {input_path}: {e}")
-        return False
+    
+    # Special handling for PPTX files
+    if input_path.lower().endswith(('.ppt', '.pptx')):
+        try:
+            # First convert to HTML using LibreOffice (if available)
+            temp_html = os.path.splitext(input_path)[0] + '.html'
+            libreoffice_cmd = [
+                'libreoffice', '--headless', '--convert-to', 'html',
+                '--outdir', os.path.dirname(input_path), input_path
+            ]
+            
+            log_debug(f"Konvertiere PPTX zu HTML mit LibreOffice: {' '.join(libreoffice_cmd)}")
+            result = subprocess.run(libreoffice_cmd, check=True, capture_output=True, text=True)
+            
+            if os.path.exists(temp_html):
+                # Then convert HTML to Markdown using Pandoc
+                log_debug(f"Konvertiere HTML zu Markdown mit Pandoc")
+                pandoc_result = subprocess.run([
+                    'pandoc',
+                    temp_html,
+                    '-f', 'html',
+                    '-t', 'markdown',
+                    '-o', output_path
+                ], check=True, capture_output=True, text=True)
+                
+                # Clean up temporary HTML file
+                os.remove(temp_html)
+                return True, "Konvertierung erfolgreich"
+            else:
+                error_msg = "LibreOffice konnte keine HTML-Datei generieren"
+                log_debug(error_msg, "error")
+                return False, error_msg
+                
+        except subprocess.CalledProcessError as e:
+            error_msg = f"Fehler bei der PPTX-Konvertierung: {e.stderr}"
+            log_debug(error_msg, "error")
+            return False, error_msg
+        except FileNotFoundError as e:
+            error_msg = "LibreOffice ist nicht installiert oder nicht im PATH"
+            log_debug(f"{error_msg}: {e}", "error")
+            return False, error_msg
+    else:
+        # Standard Pandoc conversion for other formats
+        try:
+            result = subprocess.run([
+                'pandoc',
+                input_path,
+                '-f', input_format,
+                '-t', 'markdown',
+                '-o', output_path
+            ], check=True, capture_output=True, text=True)
+            return True, "Konvertierung erfolgreich"
+        except subprocess.CalledProcessError as e:
+            error_msg = f"Pandoc-Fehler: {e.stderr}"
+            log_debug(error_msg, "error")
+            return False, error_msg
+        except FileNotFoundError as e:
+            error_msg = "Pandoc ist nicht installiert oder nicht im PATH"
+            log_debug(f"{error_msg}: {e}", "error")
+            return False, error_msg
 
 def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wiki_titles=None, username=None, default_folder=None):
     """Verarbeitet hochgeladene Dateien und konvertiert sie zu Markdown"""
@@ -194,7 +241,8 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
             output_path = os.path.join(result_dir, output_filename)
 
             log_debug(f"Starte Konvertierung zu: {output_filename}")
-            if convert_to_markdown(file_path, output_path):
+            success, error_msg = convert_to_markdown(file_path, output_path)
+            if success:
                 log_debug(f"Konvertierung erfolgreich: {output_filename}", "success")
                 converted_files.append(output_filename)
 
@@ -256,7 +304,7 @@ def process_uploads(files, session_id, upload_to_wiki=False, wiki_paths=None, wi
                         log_debug(f"Fehler beim Lesen/Hochladen von {output_filename}: {str(e)}", "error")
             else:
                 log_debug(f"Konvertierung fehlgeschlagen: {filename}", "error")
-                failed_files[filename] = "Konvertierung fehlgeschlagen"
+                failed_files[filename] = error_msg
         else:
             if not file:
                 log_debug("Leerer Datei-Eintrag übersprungen", "error")

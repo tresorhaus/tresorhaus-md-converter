@@ -1,13 +1,10 @@
-# DocFlow
+# DocFlow - Markdown Converter for Wiki.js
 
 <p align="center">
   <img src="static/logo-tresorhaus.svg" alt="TresorHaus Logo" width="300"/>
 </p>
 
-DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentformate automatisch in Markdown umwandelt. Die Anwendung wurde speziell entwickelt, um die Dokumentenverwaltung zu optimieren und den Workflow zwischen verschiedenen Systemen zu vereinfachen.
-
-## Autor
-Entwickelt von Joachim Mild für TresorHaus GmbH
+DocFlow ist ein leistungsstarker Dokumentenkonverter, der verschiedene Dokumentformate automatisch in Markdown umwandelt und nahtlos mit Wiki.js integriert. Die Anwendung optimiert die Dokumentenverwaltung und vereinfacht den Workflow zwischen verschiedenen Systemen.
 
 ## 🚀 Funktionen
 
@@ -18,6 +15,12 @@ Entwickelt von Joachim Mild für TresorHaus GmbH
   - Markup & Text (HTML, RTF, LaTeX)
   - E-Books (EPUB)
   - Weitere Formate (RST, Textile, MediaWiki, DocBook, AsciiDoc, Org-mode)
+
+- **PowerPoint (PPTX) Konvertierung:**
+  - Spezielle zweistufige Konvertierung für PowerPoint-Präsentationen
+  - Wandelt PPTX-Dateien zunächst in HTML um (mit LibreOffice)
+  - Konvertiert dann HTML in strukturiertes Markdown
+  - Optimierte Fehlerbehandlung mit detaillierten Diagnosen
 
 - **Intuitive Weboberfläche:**
   - Drag & Drop Upload
@@ -60,6 +63,7 @@ Entwickelt von Joachim Mild für TresorHaus GmbH
 - Internetverbindung
 - Pandoc (wird automatisch installiert)
 - Python 3.8+ (wird automatisch installiert, falls nicht vorhanden)
+- LibreOffice (wird für PPTX-Konvertierung benötigt)
 
 ### Automatische Installation
 
@@ -98,7 +102,12 @@ Entwickelt von Joachim Mild für TresorHaus GmbH
    sudo apt-get install pandoc
    ```
 
-4. **Konfigurationsdatei erstellen (.env):**
+4. **LibreOffice installieren (für PPTX-Konvertierung):**
+   ```bash
+   sudo apt-get install libreoffice
+   ```
+
+5. **Konfigurationsdatei erstellen (.env):**
    ```
    WIKIJS_URL=https://ihr-wiki.js-url
    WIKIJS_TOKEN=ihr-api-token
@@ -144,6 +153,7 @@ sudo journalctl -u tresorhaus-docflow -f
 
 ### Manuelle Ausführung
 ```bash
+source venv/bin/activate  # Virtuelle Umgebung aktivieren
 python app.py
 ```
 
@@ -160,6 +170,16 @@ python app.py
    - Einzelne Dateien herunterladen
    - Links zu hochgeladenen Wiki.js-Seiten öffnen
    - Debug-Informationen einsehen
+
+#### PowerPoint (PPTX) Konvertierung
+
+Bei der Konvertierung von PowerPoint-Präsentationen:
+1. Stellen Sie sicher, dass LibreOffice installiert ist
+2. Die App konvertiert PPTX-Dateien automatisch in zwei Schritten:
+   - PPTX → HTML (mit LibreOffice)
+   - HTML → Markdown (mit Pandoc)
+3. Der Prozess läuft transparent im Hintergrund
+4. Bei Fehlern werden detaillierte Diagnoseinformationen angezeigt
 
 ### Wiki.js Export (Wiki.js zu Dokument)
 
@@ -189,16 +209,21 @@ Diese Konfigurationen können in der `.env`-Datei im Installationsverzeichnis an
 ```
 tresorhaus-docflow/
 ├── app.py                 # Hauptanwendung
+├── wikijs.py              # Wiki.js API Integration
+├── export.py              # Exportfunktionalität
+├── utils.py               # Hilfsfunktionen
 ├── requirements.txt       # Python-Abhängigkeiten
 ├── install.sh             # Installationsskript
 ├── update.sh              # Update-Skript
 ├── uninstall.sh           # Deinstallationsskript
 ├── templates/             # HTML-Vorlagen
 │   ├── index.html         # Hauptseite
-│   └── results.html       # Ergebnisseite
+│   ├── results.html       # Ergebnisseite
+│   ├── export.html        # Export-Seite
+│   └── export_results.html # Export-Ergebnisseite
 ├── static/                # Statische Dateien
 │   ├── styles.css         # CSS-Stile
-│   └── logo-tesorhaus.svg # Logo
+│   └── logo-tresorhaus.svg # Logo
 ├── README.md              # Dokumentation
 └── LICENSE                # Lizenzinformationen
 ```
@@ -207,23 +232,28 @@ tresorhaus-docflow/
 
 ### Häufige Probleme und Lösungen
 
-1. **Service startet nicht:**
+1. **PPTX-Konvertierung schlägt fehl:**
+   - Stellen Sie sicher, dass LibreOffice installiert ist: `sudo apt-get install libreoffice`
+   - Überprüfen Sie die Debug-Informationen für detaillierte Fehlermeldungen
+   - Versuchen Sie, die PPTX-Datei in einem neueren PowerPoint-Format zu speichern
+
+2. **Service startet nicht:**
    ```bash
    sudo journalctl -u tresorhaus-docflow -n 50
    ```
 
-2. **Konvertierung schlägt fehl:**
-   - Überprüfen Sie die Pandoc-Installation
+3. **Konvertierung schlägt fehl:**
+   - Überprüfen Sie die Pandoc-Installation: `pandoc --version`
    - Überprüfen Sie die Dateiberechtigungen
    - Stellen Sie sicher, dass das Dateiformat unterstützt wird
 
-3. **Webinterface nicht erreichbar:**
+4. **Webinterface nicht erreichbar:**
    - Überprüfen Sie die Firewall-Einstellungen
-   - Überprüfen Sie den Service-Status
+   - Überprüfen Sie den Service-Status: `sudo systemctl status tresorhaus-docflow`
    - Stellen Sie sicher, dass der konfigurierte Port nicht blockiert ist
 
-4. **Wiki.js-Verbindungsprobleme:**
-   - Überprüfen Sie die API-URL und den API-Schlüssel
+5. **Wiki.js-Verbindungsprobleme:**
+   - Überprüfen Sie die API-URL und den API-Schlüssel in der `.env`-Datei
    - Stellen Sie sicher, dass die Wiki.js-Instanz erreichbar ist
    - Überprüfen Sie die Berechtigungen des API-Schlüssels in Wiki.js
 
@@ -238,8 +268,12 @@ Bei Problemen oder Fragen:
 
 Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe die [LICENSE](LICENSE) Datei für Details.
 
+## 👨‍💻 Autor
+
+Entwickelt von Joachim Mild für TresorHaus GmbH
+
 ---
 
 <p align="center">
-  Entwickelt mit ❤️ von Joachim Mild für TresorHaus
+  <strong>DocFlow</strong> - Effiziente Dokumentenkonvertierung und nahtlose Wiki.js-Integration
 </p>
